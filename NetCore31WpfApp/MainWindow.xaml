@@ -10,6 +10,6 @@
         
         <Button Grid.Row="0" Content="Nyomj meg!" Click="Button_Click" />
 
-        <Image Grid.Row="1" />
+        <Image Grid.Row="1" Source="{Binding UserImage}" />
     </Grid>
 </Window>

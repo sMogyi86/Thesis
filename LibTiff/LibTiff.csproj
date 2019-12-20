@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Description>https://github.com/BitMiracle/libtiff.net</Description>
+    <DefineConstants>EXPOSE_LIBTIFF</DefineConstants>
+  </PropertyGroup>
+
+</Project>

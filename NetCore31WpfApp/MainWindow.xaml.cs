@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -21,14 +22,18 @@ namespace NetCore31WpfApp
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        public byte[] UserImage { get; private set; }
+
         public MainWindow()
         {
             InitializeComponent();
 
             this.DataContext = this;
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -44,7 +49,9 @@ namespace NetCore31WpfApp
             {
                 var tiff = Tiff.Open(ofd.FileNames.First(), "r");
 
-                //tiff.read
+                    
+
+                this.UserImage = this.GetImageAsByteArray(ofd.FileNames.First());
             }
         }
 
