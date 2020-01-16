@@ -1,4 +1,7 @@
-﻿using System.IO;
+﻿using BitMiracle.LibTiff.Classic;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace StandardClassLibrary_TestBL
 {
@@ -16,6 +19,20 @@ namespace StandardClassLibrary_TestBL
             }
 
             return image;
+        }
+
+        public IReadOnlyDictionary<TiffTag, FieldValue[]> GetTagValues(string imageName)
+        {
+            var tiff = Tiff.Open(imageName, "r");
+
+            Dictionary<TiffTag, FieldValue[]> tiffTagValues = new Dictionary<TiffTag, FieldValue[]>();
+
+            foreach (var tiffTag in TiffTag.GetValues(typeof(TiffTag)).Cast<TiffTag>())
+            {
+                tiffTagValues[tiffTag] = tiff.GetField(tiffTag);
+            }
+
+            return tiffTagValues;
         }
     }
 }

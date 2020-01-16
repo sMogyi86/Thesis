@@ -20,5 +20,5 @@ namespace NetCore31WpfApp
                 ? ofd.FileNames.First()
                 : String.Empty;
         }
-    }
+    }        
 }
