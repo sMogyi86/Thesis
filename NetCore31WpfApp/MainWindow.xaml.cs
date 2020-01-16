@@ -1,5 +1,6 @@
 ﻿using BitMiracle.LibTiff.Classic;
 using Microsoft.Win32;
+using StandardClassLibrary_TestBL;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -24,6 +25,9 @@ namespace NetCore31WpfApp
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private readonly TestServices services = new TestServices();
+        private readonly UIServices uIServices = new UIServices();
+
         public byte[] UserImage { get; private set; }
 
         public MainWindow()
@@ -37,36 +41,11 @@ namespace NetCore31WpfApp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog ofd =
-                new OpenFileDialog()
-                {
-                    InitialDirectory = @"c:\Users\z0040rwz\Documents\Private\OE NIK\_SzD\DATA\LE07_L1TP_188027_20011220_20170201_01_T2\",
-                    Filter= @"GeoTIFF files(*.tif)|*.tif",
-                    Multiselect = true,                    
-                };
+            var imageName = uIServices.OpenTiff();
 
-            if (ofd.ShowDialog().Value)
-            {
-                var tiff = Tiff.Open(ofd.FileNames.First(), "r");
-
-                    
-
-                this.UserImage = this.GetImageAsByteArray(ofd.FileNames.First());
-            }
+            this.UserImage = services.GetImageAsByteArray(imageName);
         }
 
-        private byte[] GetImageAsByteArray(string imageName)
-        {
-            byte[] image = { };
-
-            using (Stream stream = new FileStream(imageName, FileMode.Open))
-            {
-                var length = stream.Length;
-                image = new byte[length];
-                stream.Read(image, 0, (int)length);
-            }
-
-            return image;
-        }
+        
     }
 }
