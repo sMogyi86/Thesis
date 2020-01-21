@@ -1,5 +1,6 @@
 ﻿using BitMiracle.LibTiff.Classic;
 using System.Collections.Generic;
+using System.Collections;
 using System.IO;
 using System.Linq;
 
@@ -32,7 +33,44 @@ namespace StandardClassLibrary_TestBL
                 tiffTagValues[tiffTag] = tiff.GetField(tiffTag);
             }
 
+            tiff.Close();
+
             return tiffTagValues;
+        }
+
+        // http://www.simplesystems.org/libtiff/libtiff.html#fio
+        public void Testing(string imageName)
+        {
+            var tiff = Tiff.Open(imageName, "r");
+
+            if (tiff != null)
+            {
+                int dirCount = 0;
+
+                do
+                {
+                    tiff.SetupStrips();
+
+
+                    dirCount++;
+                } while (tiff.ReadDirectory());
+            }
+
+
+            ////var offsets = (ulong[])tiff.GetField(TiffTag.STRIPOFFSETS)[0].Value;
+
+            //for (int i = 0; i < tiff.NumberOfStrips(); i++)
+            //{
+            //    //var offset = offsets[i];
+
+            //    var count = tiff.StripSize();
+
+            //    var buffer = new byte[count];
+
+            //    tiff.ReadEncodedStrip(i, buffer, 0, count);
+            //}
+
+            tiff.Close();
         }
     }
 }

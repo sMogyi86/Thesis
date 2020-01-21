@@ -11,6 +11,13 @@ namespace NetCore31ConsoleApp
 
         static void Main(string[] args)
         {
+            //PrintTags();
+
+            services.Testing(_imageName);
+        }
+
+        static void PrintTags()
+        {
             var tiffTagValues = services.GetTagValues(_imageName);
 
             foreach (var tag in tiffTagValues)
