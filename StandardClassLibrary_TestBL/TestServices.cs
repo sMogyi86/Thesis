@@ -45,30 +45,51 @@ namespace StandardClassLibrary_TestBL
 
             if (tiff != null)
             {
+                //var offsets = (ulong[])tiff.GetField(TiffTag.STRIPOFFSETS)[0].Value;
+
                 int dirCount = 0;
 
                 do
                 {
-                    tiff.SetupStrips();
-
-
                     dirCount++;
+
+                    int imagelength = (int)tiff.GetField(TiffTag.IMAGELENGTH)[0].Value;
+
+                    int scanlineSize = tiff.ScanlineSize();
+
+                    byte[] buf = new byte[scanlineSize];
+
+                    for (int rowCounter = 0; rowCounter < imagelength; rowCounter++)
+                    {
+                        tiff.ReadScanline(buf, rowCounter);
+
+                        if (buf.Any(b => b != 0))
+                        {
+
+                        }
+                    }
+
+
+                    //tiff.SetupStrips();
+
+                    //tiff.ReadScanline()
+
+                    //for (int i = 0; i < tiff.NumberOfStrips(); i++)
+                    //{
+                    //    var offset = offsets[i];
+
+                    //    var count = tiff.StripSize();
+
+                    //    var buffer = new byte[count];
+
+                    //    tiff.ReadEncodedStrip(i, buffer, offset, count);
+                    //}
                 } while (tiff.ReadDirectory());
             }
 
 
-            ////var offsets = (ulong[])tiff.GetField(TiffTag.STRIPOFFSETS)[0].Value;
 
-            //for (int i = 0; i < tiff.NumberOfStrips(); i++)
-            //{
-            //    //var offset = offsets[i];
 
-            //    var count = tiff.StripSize();
-
-            //    var buffer = new byte[count];
-
-            //    tiff.ReadEncodedStrip(i, buffer, 0, count);
-            //}
 
             tiff.Close();
         }
