@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LibTiff\LibTiff.csproj" />
-    <ProjectReference Include="..\StandardClassLibrary_TestBL\StandardClassLibrary_TestBL.csproj" />
+    <ProjectReference Include="..\StandardClassLibrary_TestBL\StandardClassLibraryTestBL.csproj" />
   </ItemGroup>
 
 </Project>

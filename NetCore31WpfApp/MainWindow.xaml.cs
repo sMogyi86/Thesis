@@ -1,6 +1,6 @@
 ﻿using BitMiracle.LibTiff.Classic;
 using Microsoft.Win32;
-using StandardClassLibrary_TestBL;
+using StandardClassLibraryTestBL;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -43,7 +43,7 @@ namespace NetCore31WpfApp
         {
             var imageName = uIServices.OpenTiff();
 
-            this.UserImage = services.GetImageAsByteArray(imageName);
+            this.UserImage = services.ReadBytesAsync(imageName);
         }
 
         

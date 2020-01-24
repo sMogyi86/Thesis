@@ -9,15 +9,20 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZoomAndPanNetCore", "ZoomAn
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibTiff", "LibTiff\LibTiff.csproj", "{FC27A562-4F10-40D9-A924-0091F95D56A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NetCore31ConsoleApp", "NetCore31ConsoleApp\NetCore31ConsoleApp.csproj", "{37A12E94-7277-4F9A-A3EB-302857F57130}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCore31ConsoleApp", "NetCore31ConsoleApp\NetCore31ConsoleApp.csproj", "{37A12E94-7277-4F9A-A3EB-302857F57130}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StandardClassLibrary_TestBL", "StandardClassLibrary_TestBL\StandardClassLibrary_TestBL.csproj", "{47E6ECBD-6674-4F82-87EC-57C823FD31E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StandardClassLibraryTestBL", "StandardClassLibrary_TestBL\StandardClassLibraryTestBL.csproj", "{47E6ECBD-6674-4F82-87EC-57C823FD31E7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "0_ThirdParty", "0_ThirdParty", "{B0D82B12-C14E-4EEF-A9B6-EFB2877C515D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2_FrontEnd", "2_FrontEnd", "{F3D78747-4B68-40F5-BB82-52007F7A739E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1_BL", "1_BL", "{752DF538-3FFE-4C19-83CA-41F129F9C2B8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D5445C11-2D29-49D0-8D87-D42653471238}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

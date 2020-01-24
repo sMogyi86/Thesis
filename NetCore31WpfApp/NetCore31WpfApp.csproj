@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StandardClassLibrary_TestBL\StandardClassLibrary_TestBL.csproj" />
+    <ProjectReference Include="..\StandardClassLibrary_TestBL\StandardClassLibraryTestBL.csproj" />
     <ProjectReference Include="..\ZoomAndPanNetCore\ZoomAndPanNetCore.csproj" />
   </ItemGroup>
 
