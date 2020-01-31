@@ -8,7 +8,7 @@ namespace StandardClassLibraryTestBL
         IRaster Read(string imageName);
     }
 
-    internal class TiffIO : IIOService
+    public class TiffIO : IIOService
     {
         public IRaster Read(string imageName)
         {

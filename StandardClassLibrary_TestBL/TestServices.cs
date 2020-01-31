@@ -31,9 +31,9 @@ namespace StandardClassLibraryTestBL
         // http://www.simplesystems.org/libtiff/libtiff.html#fio
         public void Testing(string imageName)
         {
+            //https://stackoverflow.com/questions/20181132/edit-raw-pixel-data-of-writeablebitmap
             //var raster = iOService.Read(imageName);
 
-            
             //https://stackoverflow.com/questions/6024172/is-it-possible-to-intercept-console-output
 
             var tiff = Tiff.Open(imageName, "w");

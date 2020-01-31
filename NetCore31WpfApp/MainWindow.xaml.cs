@@ -25,14 +25,18 @@ namespace NetCore31WpfApp
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
-        private readonly TestServices services = new TestServices();
         private readonly UIServices uIServices = new UIServices();
+        private readonly IIOService iOService = new TiffIO();
+        private readonly TestServices services = new TestServices();
 
-        public byte[] UserImage { get; private set; }
+        public object UserImage { get; private set; }
 
         public MainWindow()
         {
             InitializeComponent();
+
+            RenderOptions.SetBitmapScalingMode(this.Image, BitmapScalingMode.NearestNeighbor);
+            RenderOptions.SetEdgeMode(this.Image, EdgeMode.Aliased);
 
             this.DataContext = this;
         }
@@ -43,9 +47,64 @@ namespace NetCore31WpfApp
         {
             var imageName = uIServices.OpenTiff();
 
-            this.UserImage = services.ReadBytesAsync(imageName);
+            //this.UserImage = services.ReadBytesAsync(imageName);
         }
 
-        
+        private WriteableBitmap writeableBitmap;
+        public void Testing()
+        {
+            var r1 = iOService.Read(@"");
+            var r2 = iOService.Read(@"");
+            var r3 = iOService.Read(@"");
+
+            this.writeableBitmap = new WriteableBitmap(
+                r1.With,
+                r1.Height,
+                96,
+                96,
+                PixelFormats.Bgr24,
+                null);
+
+
+        }
+
+        void DrawPixel(IRaster r, IRaster g, IRaster b)
+        {
+            int column = (int)e.GetPosition(i).X;
+            int row = (int)e.GetPosition(i).Y;
+
+            try
+            {
+                // Reserve the back buffer for updates.
+                writeableBitmap.Lock();
+
+                unsafe
+                {
+                    // Get a pointer to the back buffer.
+                    IntPtr pBackBuffer = writeableBitmap.BackBuffer;
+
+                    // Find the address of the pixel to draw.
+                    pBackBuffer += row * writeableBitmap.BackBufferStride;
+                    pBackBuffer += column * 4;
+
+                    // Compute the pixel's color.
+                    int color_data = 255 << 16; // R
+                    color_data |= 128 << 8;   // G
+                    color_data |= 255 << 0;   // B
+
+                    // Assign the color data to the pixel.
+                    *((int*)pBackBuffer) = color_data;
+                }
+
+                // Specify the area of the bitmap that changed.
+                writeableBitmap.AddDirtyRect(new Int32Rect(column, row, 1, 1));
+            }
+            finally
+            {
+                // Release the back buffer and make it available for display.
+                writeableBitmap.Unlock();
+            }
+        }
+
     }
 }
