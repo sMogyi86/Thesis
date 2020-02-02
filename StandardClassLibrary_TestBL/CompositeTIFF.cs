@@ -1,12 +1,15 @@
 ﻿using BitMiracle.LibTiff.Classic;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace StandardClassLibraryTestBL
 {
-    internal sealed class CompositeTIFF : IDisposable
+    public interface IComposite
+    {
+        MemoryStream CreateComposite();
+    }
+
+    internal sealed class CompositeTIFF : IComposite, IDisposable
     {
         private const int SAMPLESPERPIXEL = 3;
 
@@ -22,6 +25,8 @@ namespace StandardClassLibraryTestBL
             myRed = red;
             myGreen = green;
             myBlue = blue;
+
+            Open();
         }
 
         public void Dispose()
@@ -31,10 +36,7 @@ namespace StandardClassLibraryTestBL
 
         public MemoryStream CreateComposite()
         {
-            MemoryStream memoryStream;
-
-            int bytesPerRow = myTiff.ScanlineSize();
-            byte[] rowData = new byte[bytesPerRow];
+            byte[] rowData = new byte[myTiff.ScanlineSize()];
             for (int rowIndex = 0; rowIndex < myHeight; rowIndex++)
             {
                 for (int pixelIndex = 0; pixelIndex < myWidth; pixelIndex++)
@@ -53,19 +55,7 @@ namespace StandardClassLibraryTestBL
 
             myTiff.Flush();
 
-            memoryStream = (MemoryStream)myTiff.Clientdata();
-            //memoryStream.Seek(0, SeekOrigin.Begin);
-
-            return memoryStream;
-        }
-
-        private void Close()
-        {
-            if (myTiff != null)
-            {
-                myTiff.Close();
-                myTiff.Dispose();
-            }
+            return (MemoryStream)myTiff.Clientdata();
         }
 
         private void Open()
@@ -82,6 +72,15 @@ namespace StandardClassLibraryTestBL
             myTiff.SetField(TiffTag.PLANARCONFIG, PlanarConfig.CONTIG);
             myTiff.SetField(TiffTag.PHOTOMETRIC, Photometric.RGB);
             myTiff.SetField(TiffTag.ROWSPERSTRIP, 1);
+        }
+
+        private void Close()
+        {
+            if (myTiff != null)
+            {
+                myTiff.Close();
+                myTiff.Dispose();
+            }
         }
     }
 }

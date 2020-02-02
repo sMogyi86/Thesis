@@ -6,14 +6,14 @@ namespace StandardClassLibraryTestBL
 {
     public interface IIOService
     {
-        IRaster Read(string imageName);
+        IRaster Read(string ID);
     }
 
-    public class TiffIO : IIOService
+    internal sealed class TiffIO : IIOService
     {
-        public IRaster Read(string imageName)
+        public IRaster Read(string imagePath)
         {
-            using (var tiff = Tiff.Open(imageName, "r"))
+            using (var tiff = Tiff.Open(imagePath, "r"))
             {
                 if (tiff != null)
                 {
@@ -36,11 +36,11 @@ namespace StandardClassLibraryTestBL
 
                     tiff.Close();
 
-                    return new Raster(imageName, raster, bytesPerRow, height);
+                    return new Raster(imagePath, raster, bytesPerRow, height);
                 }
             }
 
-            throw new IOException($"Can't open image! [{imageName}]");
+            throw new IOException($"Can't open image! [{imagePath}]");
         }
 
 
