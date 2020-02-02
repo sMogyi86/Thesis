@@ -2,27 +2,36 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Linq;
 
 namespace NetCore31ConsoleApp
 {
     class Program
     {
-        private readonly static string _imageName = @"c:\Users\z0040rwz\Documents\Private\OE NIK\_SzD\DATA\LE07_L1TP_188027_20011220_20170201_01_T2\LE07_L1TP_188027_20011220_20170201_01_T2_B3.TIF";
-        private readonly static TestServices services = new TestServices();
+        private readonly static string _imageName = @"D:\Segment\B30.TIFF"; // @"c:\Users\z0040rwz\Documents\Private\OE NIK\_SzD\DATA\LE07_L1TP_188027_20011220_20170201_01_T2\LE07_L1TP_188027_20011220_20170201_01_T2_B3.TIF";
+        private readonly static string _b50Path = @"D:\Segment\L5188027_02720060719_B50.TIF";
+        private readonly static string _b40Path = @"D:\Segment\L5188027_02720060719_B40.TIF";
+        private readonly static string _b30Path = @"D:\Segment\L5188027_02720060719_B30.TIF";
+        private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
+        private readonly static string _b10Path = @"D:\Segment\L5188027_02720060719_B10.TIF";
+        private readonly static TestServices testServices = new TestServices();
+        private readonly static IIOService iOService = new TiffIO();
 
         static void Main(string[] args)
         {
-            //PrintTags();
-            services.Testing(_imageName);
+            //IRaster r = iOService.Read(_b50Path);
+            IRaster r = iOService.Read(_b40Path);
+            IRaster g = iOService.Read(_b30Path);
+            IRaster b = iOService.Read(_b30Path);
+            testServices.Testing(r, g, b);
 
-            //Jagged();
-            //Multi();
-            //Single();
+            //PrintTags(_imageName);
+            Console.WriteLine("DONE");
         }
 
-        static void PrintTags()
+        static void PrintTags(string tiffPath)
         {
-            var tiffTagValues = services.GetTagValues(_imageName);
+            var tiffTagValues = testServices.GetTagValues(tiffPath);
 
             foreach (var tag in tiffTagValues)
             {

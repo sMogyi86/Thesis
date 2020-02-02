@@ -35,8 +35,8 @@ namespace NetCore31WpfApp
         {
             InitializeComponent();
 
-            RenderOptions.SetBitmapScalingMode(this.Image, BitmapScalingMode.NearestNeighbor);
-            RenderOptions.SetEdgeMode(this.Image, EdgeMode.Aliased);
+            //RenderOptions.SetBitmapScalingMode(this.Image, BitmapScalingMode.NearestNeighbor);
+            //RenderOptions.SetEdgeMode(this.Image, EdgeMode.Aliased);
 
             this.DataContext = this;
         }
@@ -45,9 +45,18 @@ namespace NetCore31WpfApp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var imageName = uIServices.OpenTiff();
+            //var imageName = uIServices.OpenTiff();
 
-            //this.UserImage = services.ReadBytesAsync(imageName);
+            this.UserImage = Read();
+        }
+
+        private BitmapSource Read()
+        {
+            Stream imageStreamSource = new FileStream(@"D:\Segment\B30.TIFf", FileMode.Open, FileAccess.Read, FileShare.Read);
+            var decoder = new TiffBitmapDecoder(imageStreamSource, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
+            BitmapSource bitmapSource = decoder.Frames[0];
+
+            return bitmapSource;
         }
 
         private WriteableBitmap writeableBitmap;
@@ -65,13 +74,17 @@ namespace NetCore31WpfApp
                 PixelFormats.Bgr24,
                 null);
 
+            
 
         }
 
         void DrawPixel(IRaster r, IRaster g, IRaster b)
         {
-            int column = (int)e.GetPosition(i).X;
-            int row = (int)e.GetPosition(i).Y;
+            //int column = (int)e.GetPosition(i).X;
+            //int row = (int)e.GetPosition(i).Y;
+
+            int width = r.With;
+            int height = r.Height;
 
             try
             {
@@ -80,24 +93,31 @@ namespace NetCore31WpfApp
 
                 unsafe
                 {
-                    // Get a pointer to the back buffer.
-                    IntPtr pBackBuffer = writeableBitmap.BackBuffer;
+                    for (int row = 0; row < height; row++)
+                    {
+                        for (int column = 0; column < width; column++)
+                        {
 
-                    // Find the address of the pixel to draw.
-                    pBackBuffer += row * writeableBitmap.BackBufferStride;
-                    pBackBuffer += column * 4;
+                            // Get a pointer to the back buffer.
+                            IntPtr pBackBuffer = writeableBitmap.BackBuffer;
 
-                    // Compute the pixel's color.
-                    int color_data = 255 << 16; // R
-                    color_data |= 128 << 8;   // G
-                    color_data |= 255 << 0;   // B
+                            // Find the address of the pixel to draw.
+                            pBackBuffer += row * writeableBitmap.BackBufferStride;
+                            pBackBuffer += column * 4;
 
-                    // Assign the color data to the pixel.
-                    *((int*)pBackBuffer) = color_data;
+                            // Compute the pixel's color.
+                            int color_data = 255 << 16; // R
+                            color_data |= 128 << 8;   // G
+                            color_data |= 255 << 0;   // B
+
+                            // Assign the color data to the pixel.
+                            *((int*)pBackBuffer) = color_data;
+                        }
+                    }
                 }
 
                 // Specify the area of the bitmap that changed.
-                writeableBitmap.AddDirtyRect(new Int32Rect(column, row, 1, 1));
+                //writeableBitmap.AddDirtyRect(new Int32Rect(column, row, 1, 1));
             }
             finally
             {

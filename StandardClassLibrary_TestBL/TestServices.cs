@@ -44,8 +44,47 @@ namespace StandardClassLibraryTestBL
 
             // https://stackoverflow.com/questions/48884728/libtiff-reading-and-writing-rgba-image-in-c
 
-            tiff
         }
 
+        public void Testing(IRaster r, IRaster g, IRaster b)
+        {
+            using (var tiff = Tiff.Open(@"D:\Segment\New folder\alma.tiff", "w"))
+            {
+                int width = r.With;
+                int height = r.Height;
+                int samplePerPixel = 3;
+
+                tiff.SetField(TiffTag.IMAGEWIDTH, width);
+                tiff.SetField(TiffTag.IMAGELENGTH, height);
+                tiff.SetField(TiffTag.SAMPLESPERPIXEL, samplePerPixel);
+                tiff.SetField(TiffTag.BITSPERSAMPLE, 8);
+                tiff.SetField(TiffTag.ORIENTATION, Orientation.TOPLEFT);
+                tiff.SetField(TiffTag.PLANARCONFIG, PlanarConfig.CONTIG);
+                tiff.SetField(TiffTag.PHOTOMETRIC, Photometric.RGB);
+
+                int bytesPerRow = tiff.ScanlineSize();
+                tiff.SetField(TiffTag.ROWSPERSTRIP, 1);
+
+                byte[] rowData = new byte[bytesPerRow];
+                for (int rowIndex = 0; rowIndex < height; rowIndex++)
+                {
+                    for (int pixelIndex = 0; pixelIndex < width; pixelIndex++)
+                    {
+                        rowData[pixelIndex * samplePerPixel + 0] = r.Data[rowIndex * width + pixelIndex];
+                        rowData[pixelIndex * samplePerPixel + 1] = g.Data[rowIndex * width + pixelIndex];
+                        rowData[pixelIndex * samplePerPixel + 2] = b.Data[rowIndex * width + pixelIndex];
+                    }
+
+                    if (!tiff.WriteScanline(rowData, rowIndex))
+                        throw new IOException(@"Image data were NOT encoded and written successfully!");
+                }
+
+                tiff.Close();
+
+
+
+            }
+
+        }
     }
 }

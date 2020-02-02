@@ -1,4 +1,5 @@
 ﻿using BitMiracle.LibTiff.Classic;
+using System.Linq;
 using System.IO;
 
 namespace StandardClassLibraryTestBL
@@ -12,33 +13,37 @@ namespace StandardClassLibraryTestBL
     {
         public IRaster Read(string imageName)
         {
-            var tiff = Tiff.Open(imageName, "r");
-
-            if (tiff != null)
+            using (var tiff = Tiff.Open(imageName, "r"))
             {
-                int rowSize = tiff.ScanlineSize();
-                int rowCount = (int)tiff.GetField(TiffTag.IMAGELENGTH)[0].Value;
-                byte[] raster = new byte[rowSize * rowCount];
-
-                var planarConfig = tiff.GetField(TiffTag.PLANARCONFIG)[0].Value;
-                if (PlanarConfig.CONTIG != (PlanarConfig)planarConfig)
-                    throw new IOException($"Unknown planarConfig! [{planarConfig}]");
-
-                short plane = 0;
-
-                for (int rowCounter = 0; rowCounter < rowCount; rowCounter++)
+                if (tiff != null)
                 {
-                    int offset = rowCounter * rowSize;
-                    tiff.ReadScanline(raster, offset, rowCounter, plane);
+                    int bytesPerRow = tiff.ScanlineSize();
+
+                    int height = (int)tiff.GetField(TiffTag.IMAGELENGTH)[0].Value;
+
+                    var planarConfig = tiff.GetField(TiffTag.PLANARCONFIG)[0].Value;
+                    if (PlanarConfig.CONTIG != (PlanarConfig)planarConfig)
+                        throw new IOException($"Unknown planarConfig! [{planarConfig}]");
+
+                    byte[] raster = new byte[bytesPerRow * height];
+                    for (int rowIndex = 0; rowIndex < height; rowIndex++)
+                    {
+                        int offset = rowIndex * bytesPerRow;
+
+                        if (!tiff.ReadScanline(raster, offset, rowIndex, 0))
+                            throw new IOException("Image data were NOT read and decoded successfully!");
+                    }
+
+                    tiff.Close();
+
+                    return new Raster(imageName, raster, bytesPerRow, height);
                 }
-
-                tiff.Close();
-
-                return new Raster(imageName, raster, rowSize, rowCount);
             }
 
             throw new IOException($"Can't open image! [{imageName}]");
         }
+
+
 
     }
 }
