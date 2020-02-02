@@ -25,18 +25,21 @@ namespace NetCore31WpfApp
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private readonly static string _b50Path = @"D:\Segment\L5188027_02720060719_B50.TIF";
+        private readonly static string _b40Path = @"D:\Segment\L5188027_02720060719_B40.TIF";
+        private readonly static string _b30Path = @"D:\Segment\L5188027_02720060719_B30.TIF";
+        private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
+        private readonly static string _b10Path = @"D:\Segment\L5188027_02720060719_B10.TIF";
+
         private readonly UIServices uIServices = new UIServices();
         private readonly IIOService iOService = new TiffIO();
-        private readonly TestServices services = new TestServices();
+        private readonly TestServices testServices = new TestServices();
 
         public object UserImage { get; private set; }
 
         public MainWindow()
         {
             InitializeComponent();
-
-            //RenderOptions.SetBitmapScalingMode(this.Image, BitmapScalingMode.NearestNeighbor);
-            //RenderOptions.SetEdgeMode(this.Image, EdgeMode.Aliased);
 
             this.DataContext = this;
         }
@@ -45,86 +48,21 @@ namespace NetCore31WpfApp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            //var imageName = uIServices.OpenTiff();
 
-            this.UserImage = Read();
+            IRaster r = iOService.Read(_b40Path);
+            IRaster g = iOService.Read(_b30Path);
+            IRaster b = iOService.Read(_b30Path);
+            var memoryStream = testServices.CreateComposite(r, g, b);
+
+            var imageSource = new BitmapImage();
+            imageSource.BeginInit();
+            imageSource.StreamSource = memoryStream;
+            imageSource.EndInit();
+
+            this.UserImage = imageSource;
         }
 
-        private BitmapSource Read()
-        {
-            Stream imageStreamSource = new FileStream(@"D:\Segment\B30.TIFf", FileMode.Open, FileAccess.Read, FileShare.Read);
-            var decoder = new TiffBitmapDecoder(imageStreamSource, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
-            BitmapSource bitmapSource = decoder.Frames[0];
-
-            return bitmapSource;
-        }
-
-        private WriteableBitmap writeableBitmap;
-        public void Testing()
-        {
-            var r1 = iOService.Read(@"");
-            var r2 = iOService.Read(@"");
-            var r3 = iOService.Read(@"");
-
-            this.writeableBitmap = new WriteableBitmap(
-                r1.With,
-                r1.Height,
-                96,
-                96,
-                PixelFormats.Bgr24,
-                null);
-
-            
-
-        }
-
-        void DrawPixel(IRaster r, IRaster g, IRaster b)
-        {
-            //int column = (int)e.GetPosition(i).X;
-            //int row = (int)e.GetPosition(i).Y;
-
-            int width = r.With;
-            int height = r.Height;
-
-            try
-            {
-                // Reserve the back buffer for updates.
-                writeableBitmap.Lock();
-
-                unsafe
-                {
-                    for (int row = 0; row < height; row++)
-                    {
-                        for (int column = 0; column < width; column++)
-                        {
-
-                            // Get a pointer to the back buffer.
-                            IntPtr pBackBuffer = writeableBitmap.BackBuffer;
-
-                            // Find the address of the pixel to draw.
-                            pBackBuffer += row * writeableBitmap.BackBufferStride;
-                            pBackBuffer += column * 4;
-
-                            // Compute the pixel's color.
-                            int color_data = 255 << 16; // R
-                            color_data |= 128 << 8;   // G
-                            color_data |= 255 << 0;   // B
-
-                            // Assign the color data to the pixel.
-                            *((int*)pBackBuffer) = color_data;
-                        }
-                    }
-                }
-
-                // Specify the area of the bitmap that changed.
-                //writeableBitmap.AddDirtyRect(new Int32Rect(column, row, 1, 1));
-            }
-            finally
-            {
-                // Release the back buffer and make it available for display.
-                writeableBitmap.Unlock();
-            }
-        }
+       
 
     }
 }

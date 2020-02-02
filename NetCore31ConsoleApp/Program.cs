@@ -22,8 +22,8 @@ namespace NetCore31ConsoleApp
             //IRaster r = iOService.Read(_b50Path);
             IRaster r = iOService.Read(_b40Path);
             IRaster g = iOService.Read(_b30Path);
-            IRaster b = iOService.Read(_b30Path);
-            testServices.Testing(r, g, b);
+            IRaster b = iOService.Read(_b20Path);
+            testServices.CreateComposite(r, g, b);
 
             //PrintTags(_imageName);
             Console.WriteLine("DONE");

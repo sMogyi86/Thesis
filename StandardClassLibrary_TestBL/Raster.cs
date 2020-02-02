@@ -11,7 +11,7 @@ namespace StandardClassLibraryTestBL
         int With { get; }
         int Height { get; }
     }
-    class Raster : IRaster
+    internal sealed class Raster : IRaster
     {
         public string ID { get; }
         public byte[] Data { get; }
