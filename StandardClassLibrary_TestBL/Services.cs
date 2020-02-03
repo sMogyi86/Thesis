@@ -9,7 +9,7 @@ namespace StandardClassLibraryTestBL
         public static IIOService GetIO()
             => new TiffIO();
 
-        public static IComposite GetComposite(int width, int height, byte[] red, byte[] green, byte[] blue)
-            => new CompositeTIFF(width, height, red, green, blue);
+        public static ICompositeFactory GetCompositeFactory()
+            => new LibTiffCompositeFactory();
     }
 }
