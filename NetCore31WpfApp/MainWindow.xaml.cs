@@ -68,6 +68,9 @@ namespace NetCore31WpfApp
         }
 
 
-
+        private void Testing()
+        {
+            
+        }
     }
 }
