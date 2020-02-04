@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using StandardClassLibraryTestBL;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -56,11 +57,11 @@ namespace NetCore31WpfApp
             IRaster b = iOService.Read(_b30Path);
 
             var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
-            var comp = compositeFactory.CreateComposite(compositeParts);
+            var img = compositeFactory.CreateComposite(compositeParts);
 
             var imageSource = new BitmapImage();
             imageSource.BeginInit();
-            imageSource.StreamSource = comp.Stream;
+            imageSource.StreamSource = img;
             imageSource.EndInit();
 
             this.UserImage = imageSource;

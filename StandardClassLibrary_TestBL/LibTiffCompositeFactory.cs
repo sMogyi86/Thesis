@@ -4,44 +4,16 @@ using System.IO;
 
 namespace StandardClassLibraryTestBL
 {
-    public interface ICompositeStream : IDisposable
-    {
-        MemoryStream Stream { get; }
-    }
-
     public interface ICompositeFactory
     {
-        ICompositeStream CreateComposite(CompositeParts from);
+        MemoryStream CreateComposite(CompositeParts from);
     }
 
     internal sealed class LibTiffCompositeFactory : ICompositeFactory
     {
-        private class LibTiffComposite : ICompositeStream
-        {
-            private readonly Tiff myTiff;
-
-            public MemoryStream Stream { get; }
-
-            public LibTiffComposite(Tiff tiff, MemoryStream stream)
-            {
-                myTiff = tiff ?? throw new ArgumentNullException(nameof(tiff));
-                Stream = stream ?? throw new ArgumentNullException(nameof(stream));
-                Stream.Seek(0, SeekOrigin.Begin);
-            }
-
-            public void Dispose()
-            {
-                myTiff.Close();
-                myTiff.Dispose();
-
-                Stream.Close();
-                Stream.Dispose();
-            }
-        }
-
         private const int SAMPLESPERPIXEL = 3;
 
-        public ICompositeStream CreateComposite(CompositeParts parts)
+        public MemoryStream CreateComposite(CompositeParts parts)
         {
             var tiff = Tiff.ClientOpen("in-memory RGB composite", "w", new MemoryStream(), new TiffStream());
 
@@ -59,33 +31,37 @@ namespace StandardClassLibraryTestBL
                 tiff.SetField(TiffTag.PHOTOMETRIC, Photometric.RGB);
                 tiff.SetField(TiffTag.ROWSPERSTRIP, 1);
 
+                var red = parts.Red.Span;
+                var green = parts.Green.Span;
+                var blue = parts.Blue.Span;
+
                 byte[] rowData = new byte[tiff.ScanlineSize()];
                 for (int rowIndex = 0; rowIndex < parts.Height; rowIndex++)
                 {
                     for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
                     {
-                        rowData[pixelIndex * SAMPLESPERPIXEL + 0] = parts.Red[rowIndex * parts.Width + pixelIndex];
-                        rowData[pixelIndex * SAMPLESPERPIXEL + 1] = parts.Green[rowIndex * parts.Width + pixelIndex];
-                        rowData[pixelIndex * SAMPLESPERPIXEL + 2] = parts.Blue[rowIndex * parts.Width + pixelIndex];
+                        rowData[pixelIndex * SAMPLESPERPIXEL + 0] = red[rowIndex * parts.Width + pixelIndex];
+                        rowData[pixelIndex * SAMPLESPERPIXEL + 1] = green[rowIndex * parts.Width + pixelIndex];
+                        rowData[pixelIndex * SAMPLESPERPIXEL + 2] = blue[rowIndex * parts.Width + pixelIndex];
                     }
 
                     if (!tiff.WriteScanline(rowData, rowIndex))
                         throw new IOException(@"Image data were NOT encoded and written successfully!");
                 }
 
+                //https://stackoverflow.com/questions/23162083/writing-a-multipaged-tif-file-from-memorystream-vs-filestream/23227792#23227792
+                tiff.Flush();
+
                 if (!tiff.WriteDirectory())
                     throw new IOException("The current directory was NOT written successfully!");
 
-                tiff.Flush();
-
-                return new LibTiffComposite(tiff, (MemoryStream)tiff.Clientdata());
+                return new MemoryStream(((MemoryStream)tiff.Clientdata()).GetBuffer(), false);
             }
-            catch
+            finally
             {
+                // https://stackoverflow.com/questions/7274340/how-to-use-bit-miracle-libtiff-net-to-write-the-image-to-a-memorystream/8427942#8427942
                 tiff.Close();
                 tiff.Dispose();
-
-                throw;
             }
         }
     }
@@ -94,17 +70,17 @@ namespace StandardClassLibraryTestBL
     {
         public int Width { get; }
         public int Height { get; }
-        public byte[] Red { get; }
-        public byte[] Green { get; }
-        public byte[] Blue { get; }
+        public ReadOnlyMemory<byte> Red { get; }
+        public ReadOnlyMemory<byte> Green { get; }
+        public ReadOnlyMemory<byte> Blue { get; }
 
-        public CompositeParts(int width, int height, byte[] red, byte[] green, byte[] blue)
+        public CompositeParts(int width, int height, ReadOnlyMemory<byte> red, ReadOnlyMemory<byte> green, ReadOnlyMemory<byte> blue)
         {
             Width = width;
             Height = height;
-            Red = red ?? throw new ArgumentNullException(nameof(red));
-            Green = green ?? throw new ArgumentNullException(nameof(green));
-            Blue = blue ?? throw new ArgumentNullException(nameof(blue));
+            Red = red;
+            Green = green;
+            Blue = blue;
         }
     }
 }

@@ -42,8 +42,5 @@ namespace StandardClassLibraryTestBL
 
             throw new IOException($"Can't open image! [{imagePath}]");
         }
-
-
-
     }
 }

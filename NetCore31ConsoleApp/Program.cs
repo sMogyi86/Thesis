@@ -32,7 +32,7 @@ namespace NetCore31ConsoleApp
 
                 using (var c = compositeFactory.CreateComposite(compositeParts))
                 {
-                    c.Stream.CopyTo(fileStream);
+                    c.Composite.CopyTo(fileStream);
 
                     fileStream.Flush();
                 }
