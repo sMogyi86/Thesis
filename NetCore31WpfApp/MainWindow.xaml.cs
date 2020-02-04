@@ -32,7 +32,7 @@ namespace NetCore31WpfApp
         private readonly static string _b10Path = @"D:\Segment\L5188027_02720060719_B10.TIF";
 
         private readonly UIServices uIServices = new UIServices();
-        private readonly IIOService iOService = new TiffIO();
+        private readonly IIOService iOService = new TiffIO();;
         private readonly TestServices testServices = new TestServices();
 
         public object UserImage { get; private set; }
