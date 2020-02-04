@@ -21,7 +21,7 @@ namespace StandardClassLibraryTestBL
         public Raster(string name, byte[] data, int width, int height)
         {
             ID = name;
-            Data = data;
+            Data = data ?? throw new ArgumentNullException(nameof(data));
             With = width;
             Height = height;
         }

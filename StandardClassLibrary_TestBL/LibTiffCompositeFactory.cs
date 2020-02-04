@@ -6,12 +6,12 @@ namespace StandardClassLibraryTestBL
 {
     public interface ICompositeStream : IDisposable
     {
-        Stream Stream { get; }
+        MemoryStream Stream { get; }
     }
 
     public interface ICompositeFactory
     {
-        ICompositeStream CreateComposite(CompositeParts from, Stream to);
+        ICompositeStream CreateComposite(CompositeParts from);
     }
 
     internal sealed class LibTiffCompositeFactory : ICompositeFactory
@@ -20,36 +20,38 @@ namespace StandardClassLibraryTestBL
         {
             private readonly Tiff myTiff;
 
-            public Stream Stream { get; }
+            public MemoryStream Stream { get; }
 
-
-            public LibTiffComposite(Tiff tiff, Stream stream)
+            public LibTiffComposite(Tiff tiff, MemoryStream stream)
             {
                 myTiff = tiff ?? throw new ArgumentNullException(nameof(tiff));
                 Stream = stream ?? throw new ArgumentNullException(nameof(stream));
+                Stream.Seek(0, SeekOrigin.Begin);
             }
 
             public void Dispose()
             {
                 myTiff.Close();
                 myTiff.Dispose();
-                // TODO Stream.Dispose(); ???
+
+                Stream.Close();
+                Stream.Dispose();
             }
         }
 
         private const int SAMPLESPERPIXEL = 3;
 
-        public ICompositeStream CreateComposite(CompositeParts from, Stream to)
+        public ICompositeStream CreateComposite(CompositeParts parts)
         {
-            var tiff = Tiff.ClientOpen("in-memory RGB composite", "w", to, new TiffStream());
+            var tiff = Tiff.ClientOpen("in-memory RGB composite", "w", new MemoryStream(), new TiffStream());
 
             if (tiff is null)
                 throw new IOException("Can not create composite-stream!");
 
             try
             {
-                tiff.SetField(TiffTag.IMAGEWIDTH, from.Width);
-                tiff.SetField(TiffTag.IMAGELENGTH, from.Height);
+                tiff.SetField(TiffTag.IMAGEWIDTH, parts.Width);
+                tiff.SetField(TiffTag.IMAGELENGTH, parts.Height);
                 tiff.SetField(TiffTag.SAMPLESPERPIXEL, SAMPLESPERPIXEL);
                 tiff.SetField(TiffTag.BITSPERSAMPLE, 8);
                 tiff.SetField(TiffTag.ORIENTATION, Orientation.TOPLEFT);
@@ -58,13 +60,13 @@ namespace StandardClassLibraryTestBL
                 tiff.SetField(TiffTag.ROWSPERSTRIP, 1);
 
                 byte[] rowData = new byte[tiff.ScanlineSize()];
-                for (int rowIndex = 0; rowIndex < from.Height; rowIndex++)
+                for (int rowIndex = 0; rowIndex < parts.Height; rowIndex++)
                 {
-                    for (int pixelIndex = 0; pixelIndex < from.Width; pixelIndex++)
+                    for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
                     {
-                        rowData[pixelIndex * SAMPLESPERPIXEL + 0] = from.Red.Span[rowIndex * from.Width + pixelIndex];
-                        rowData[pixelIndex * SAMPLESPERPIXEL + 1] = from.Green.Span[rowIndex * from.Width + pixelIndex];
-                        rowData[pixelIndex * SAMPLESPERPIXEL + 2] = from.Blue.Span[rowIndex * from.Width + pixelIndex];
+                        rowData[pixelIndex * SAMPLESPERPIXEL + 0] = parts.Red[rowIndex * parts.Width + pixelIndex];
+                        rowData[pixelIndex * SAMPLESPERPIXEL + 1] = parts.Green[rowIndex * parts.Width + pixelIndex];
+                        rowData[pixelIndex * SAMPLESPERPIXEL + 2] = parts.Blue[rowIndex * parts.Width + pixelIndex];
                     }
 
                     if (!tiff.WriteScanline(rowData, rowIndex))
@@ -76,7 +78,7 @@ namespace StandardClassLibraryTestBL
 
                 tiff.Flush();
 
-                return new LibTiffComposite(tiff, (Stream)tiff.Clientdata());
+                return new LibTiffComposite(tiff, (MemoryStream)tiff.Clientdata());
             }
             catch
             {
@@ -92,17 +94,17 @@ namespace StandardClassLibraryTestBL
     {
         public int Width { get; }
         public int Height { get; }
-        public ReadOnlyMemory<byte> Red { get; }
-        public ReadOnlyMemory<byte> Green { get; }
-        public ReadOnlyMemory<byte> Blue { get; }
+        public byte[] Red { get; }
+        public byte[] Green { get; }
+        public byte[] Blue { get; }
 
-        public CompositeParts(int width, int height, ReadOnlyMemory<byte> red, ReadOnlyMemory<byte> green, ReadOnlyMemory<byte> blue)
+        public CompositeParts(int width, int height, byte[] red, byte[] green, byte[] blue)
         {
             Width = width;
             Height = height;
-            Red = red;
-            Green = green;
-            Blue = blue;
+            Red = red ?? throw new ArgumentNullException(nameof(red));
+            Green = green ?? throw new ArgumentNullException(nameof(green));
+            Blue = blue ?? throw new ArgumentNullException(nameof(blue));
         }
     }
 }

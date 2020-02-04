@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 
 namespace NetCore31ConsoleApp
@@ -15,15 +16,27 @@ namespace NetCore31ConsoleApp
         private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
         private readonly static string _b10Path = @"D:\Segment\L5188027_02720060719_B10.TIF";
         private readonly static TestServices testServices = new TestServices();
-        private readonly static IIOService iOService = new TiffIO();
+        private readonly static IIOService iOService = Services.GetIO();
+        private readonly static ICompositeFactory compositeFactory = Services.GetCompositeFactory();
 
         static void Main(string[] args)
         {
-            //IRaster r = iOService.Read(_b50Path);
-            IRaster r = iOService.Read(_b40Path);
-            IRaster g = iOService.Read(_b30Path);
-            IRaster b = iOService.Read(_b20Path);
-            testServices.CreateComposite(r, g, b);
+            using (FileStream fileStream = new FileStream(@"D:\Segment\New folder\alma.tiff", FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                //IRaster r = iOService.Read(_b50Path);
+                IRaster r = iOService.Read(_b40Path);
+                IRaster g = iOService.Read(_b30Path);
+                IRaster b = iOService.Read(_b20Path);
+
+                var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
+
+                using (var c = compositeFactory.CreateComposite(compositeParts))
+                {
+                    c.Stream.CopyTo(fileStream);
+
+                    fileStream.Flush();
+                }
+            }
 
             //PrintTags(_imageName);
             Console.WriteLine("DONE");

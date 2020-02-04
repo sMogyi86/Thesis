@@ -31,9 +31,12 @@ namespace NetCore31WpfApp
         private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
         private readonly static string _b10Path = @"D:\Segment\L5188027_02720060719_B10.TIF";
 
+
+
         private readonly UIServices uIServices = new UIServices();
-        private readonly IIOService iOService = new TiffIO();;
         private readonly TestServices testServices = new TestServices();
+        private readonly IIOService iOService = Services.GetIO();
+        private readonly ICompositeFactory compositeFactory = Services.GetCompositeFactory();
 
         public object UserImage { get; private set; }
 
@@ -48,21 +51,22 @@ namespace NetCore31WpfApp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
             IRaster r = iOService.Read(_b40Path);
             IRaster g = iOService.Read(_b30Path);
             IRaster b = iOService.Read(_b30Path);
-            var memoryStream = testServices.CreateComposite(r, g, b);
+
+            var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
+            var comp = compositeFactory.CreateComposite(compositeParts);
 
             var imageSource = new BitmapImage();
             imageSource.BeginInit();
-            imageSource.StreamSource = memoryStream;
+            imageSource.StreamSource = comp.Stream;
             imageSource.EndInit();
 
             this.UserImage = imageSource;
         }
 
-       
+
 
     }
 }

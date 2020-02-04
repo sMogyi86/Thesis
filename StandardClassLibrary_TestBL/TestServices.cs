@@ -69,15 +69,16 @@ namespace StandardClassLibraryTestBL
 
         //        var v1 = tiff.Flush();
 
-        //        using (FileStream fileStream = new FileStream(@"D:\Segment\New folder\korte.tiff", FileMode.OpenOrCreate, FileAccess.Write))
-        //        {
-        //            memoryStream = (MemoryStream)tiff.Clientdata();
-        //            memoryStream.Seek(0, SeekOrigin.Begin);
+        //        memoryStream = (MemoryStream)tiff.Clientdata();
+        //        memoryStream.Seek(0, SeekOrigin.Begin);
 
-        //            memoryStream.CopyTo(fileStream); // TODO Async
+        //        //using (FileStream fileStream = new FileStream(@"D:\Segment\New folder\korte.tiff", FileMode.OpenOrCreate, FileAccess.Write))
+        //        //{
 
-        //            fileStream.Flush();
-        //        }
+        //        //    memoryStream.CopyTo(fileStream); // TODO Async
+
+        //        //    fileStream.Flush();
+        //        //}
 
         //        //tiff.Close();
         //    }
@@ -93,7 +94,7 @@ namespace StandardClassLibraryTestBL
 
             Span<byte> s;
 
-            
+
         }
     }
 }
