@@ -59,7 +59,7 @@ namespace NetCore31WpfApp
         {
             this.Load();
 
-
+            this.TestComposite();
         }
 
         private void Load()
@@ -71,8 +71,8 @@ namespace NetCore31WpfApp
 
         private void TestComposite()
         {
-            var compositeParts = new CompositeParts(myR.With, myR.Height, myR.Data, myG.Data, myB.Data);
-            var img = compositeFactory.CreateComposite(compositeParts);
+            var compositeParts = new TiffParts(myR.With, myR.Height, myR.Data, myG.Data, myB.Data);
+            var img = compositeFactory.CreateTiff(compositeParts);
 
             var imageSource = new BitmapImage();
             imageSource.BeginInit();

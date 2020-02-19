@@ -40,9 +40,9 @@ namespace NetCore31ConsoleApp
                 IRaster g = iOService.Load(_b30Path);
                 IRaster b = iOService.Load(_b20Path);
 
-                var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
+                var compositeParts = new TiffParts(r.With, r.Height, r.Data, g.Data, b.Data);
 
-                using (var c = compositeFactory.CreateComposite(compositeParts))
+                using (var c = compositeFactory.CreateTiff(compositeParts))
                 {
                     //c.Composite.CopyTo(fileStream);
 
