@@ -36,9 +36,9 @@ namespace NetCore31ConsoleApp
             using (FileStream fileStream = new FileStream(@"D:\Segment\New folder\alma.tiff", FileMode.OpenOrCreate, FileAccess.ReadWrite))
             {
                 //IRaster r = iOService.Read(_b50Path);
-                IRaster r = iOService.Load(_b40Path);
-                IRaster g = iOService.Load(_b30Path);
-                IRaster b = iOService.Load(_b20Path);
+                IRasterLayer r = iOService.Load(_b40Path);
+                IRasterLayer g = iOService.Load(_b30Path);
+                IRasterLayer b = iOService.Load(_b20Path);
 
                 var compositeParts = new TiffParts(r.With, r.Height, r.Data, g.Data, b.Data);
 

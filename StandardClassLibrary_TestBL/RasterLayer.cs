@@ -2,21 +2,21 @@
 
 namespace StandardClassLibraryTestBL
 {
-    public interface IRaster
+    public interface IRasterLayer
     {
         string ID { get; }
         ReadOnlyMemory<byte> Data { get; }
         int With { get; }
         int Height { get; }
     }
-    internal sealed class Raster : IRaster
+    public class RasterLayer : IRasterLayer
     {
         public string ID { get; }
         public ReadOnlyMemory<byte> Data { get; }
         public int With { get; }
         public int Height { get; }
 
-        public Raster(string name, byte[] data, int width, int height)
+        public RasterLayer(string name, byte[] data, int width, int height)
         {
             ID = name;
             Data = data ?? throw new ArgumentNullException(nameof(data));

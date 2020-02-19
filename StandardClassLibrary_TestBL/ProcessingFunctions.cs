@@ -6,13 +6,13 @@ namespace StandardClassLibraryTestBL
 {
     public interface IProcessingFunctions
     {
-        void CalculateVariants(IRaster raster, CalculateVariantsParam parameters, Memory<double> destination);
+        void CalculateVariants(IRasterLayer raster, CalculateVariantsParam parameters, Memory<double> destination);
     }
 
     internal class ProcessingFunctions : IProcessingFunctions
     {
         // TODO mirroring
-        public void CalculateVariants(IRaster raster, CalculateVariantsParam parameters, Memory<double> destination)
+        public void CalculateVariants(IRasterLayer raster, CalculateVariantsParam parameters, Memory<double> destination)
         {
             int range = parameters.FilterMatrixSize;
             int extraPixelsCount = (range / 2) * raster.With;
@@ -49,7 +49,7 @@ namespace StandardClassLibraryTestBL
                 }
                 double variance = sum / offsets.Count;
 
-                to[i] = variance;
+                to[i] = parameters.Weight * variance;
             }
         }
     }
@@ -59,6 +59,14 @@ namespace StandardClassLibraryTestBL
         public byte FilterMatrixSize { get; }
         public int Start { get; }
         public int Length { get; }
-        public double Weight { get; set; }
+        public double Weight { get; }
+
+        public CalculateVariantsParam(byte filterMatrixSize, int start, int length, double weight)
+        {
+            FilterMatrixSize = filterMatrixSize;
+            Start = start;
+            Length = length;
+            Weight = weight;
+        }
     }
 }

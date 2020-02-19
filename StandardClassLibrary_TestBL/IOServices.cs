@@ -6,12 +6,12 @@ namespace StandardClassLibraryTestBL
 {
     public interface IIOService
     {
-        IRaster Load(string ID);
+        IRasterLayer Load(string ID);
     }
 
     internal sealed class TiffIO : IIOService
     {
-        public IRaster Load(string imagePath)
+        public IRasterLayer Load(string imagePath)
         {
             using (var tiff = Tiff.Open(imagePath, "r"))
             {
@@ -36,7 +36,7 @@ namespace StandardClassLibraryTestBL
 
                     tiff.Close();
 
-                    return new Raster(imagePath, raster, bytesPerRow, height);
+                    return new RasterLayer(imagePath, raster, bytesPerRow, height);
                 }
             }
 

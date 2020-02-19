@@ -40,9 +40,9 @@ namespace NetCore31WpfApp
         private readonly ICompositeFactory compositeFactory = Services.GetCompositeFactory();
         private readonly IProcessingFunctions processingFunctions = Services.GetProcessingFunctions();
 
-        private IRaster myR;
-        private IRaster myG;
-        private IRaster myB;
+        private IRasterLayer myR;
+        private IRasterLayer myG;
+        private IRasterLayer myB;
 
         public object UserImage { get; private set; }
 
@@ -59,7 +59,7 @@ namespace NetCore31WpfApp
         {
             this.Load();
 
-            this.TestComposite();
+            this.TestCalculateVariants();
         }
 
         private void Load()
@@ -68,7 +68,6 @@ namespace NetCore31WpfApp
             myG = iOService.Load(_b30Path);
             myB = iOService.Load(_b30Path);
         }
-
         private void TestComposite()
         {
             var compositeParts = new TiffParts(myR.With, myR.Height, myR.Data, myG.Data, myB.Data);
@@ -80,6 +79,25 @@ namespace NetCore31WpfApp
             imageSource.EndInit();
 
             this.UserImage = imageSource;
+        }
+
+        private void TestCalculateVariants()
+        {
+            var length = (myR.With * myR.Height - 2 * myR.With);
+
+            CalculateVariantsParam parameters = new CalculateVariantsParam(
+                3,
+                myR.With,
+                length,
+                1);
+
+            var buci = new double[length];
+            Memory<double> destination = new Memory<double>(buci);
+            buci.Select(d => );
+
+            processingFunctions.CalculateVariants(myR, parameters, destination);
+
+            var variants = new RasterLayer("", buci, myR.With, myR.Height - 2);
         }
     }
 }
