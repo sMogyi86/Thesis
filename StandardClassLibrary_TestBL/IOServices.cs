@@ -6,12 +6,12 @@ namespace StandardClassLibraryTestBL
 {
     public interface IIOService
     {
-        IRaster Read(string ID);
+        IRaster Load(string ID);
     }
 
     internal sealed class TiffIO : IIOService
     {
-        public IRaster Read(string imagePath)
+        public IRaster Load(string imagePath)
         {
             using (var tiff = Tiff.Open(imagePath, "r"))
             {

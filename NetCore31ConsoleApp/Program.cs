@@ -21,25 +21,34 @@ namespace NetCore31ConsoleApp
 
         static void Main(string[] args)
         {
+            int a = 1;
+            int b = 2;
+            double c = a / Convert.ToDouble(b);
+
+            Console.WriteLine(c);
+           
+
+            Console.WriteLine("DONE");
+        }
+
+        static void CompsiteTest()
+        {
             using (FileStream fileStream = new FileStream(@"D:\Segment\New folder\alma.tiff", FileMode.OpenOrCreate, FileAccess.ReadWrite))
             {
                 //IRaster r = iOService.Read(_b50Path);
-                IRaster r = iOService.Read(_b40Path);
-                IRaster g = iOService.Read(_b30Path);
-                IRaster b = iOService.Read(_b20Path);
+                IRaster r = iOService.Load(_b40Path);
+                IRaster g = iOService.Load(_b30Path);
+                IRaster b = iOService.Load(_b20Path);
 
                 var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
 
                 using (var c = compositeFactory.CreateComposite(compositeParts))
                 {
-                    c.Composite.CopyTo(fileStream);
+                    //c.Composite.CopyTo(fileStream);
 
                     fileStream.Flush();
                 }
             }
-
-            //PrintTags(_imageName);
-            Console.WriteLine("DONE");
         }
 
         static void PrintTags(string tiffPath)

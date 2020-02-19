@@ -52,9 +52,9 @@ namespace NetCore31WpfApp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            IRaster r = iOService.Read(_b40Path);
-            IRaster g = iOService.Read(_b30Path);
-            IRaster b = iOService.Read(_b30Path);
+            IRaster r = iOService.Load(_b40Path);
+            IRaster g = iOService.Load(_b30Path);
+            IRaster b = iOService.Load(_b30Path);
 
             var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
             var img = compositeFactory.CreateComposite(compositeParts);
