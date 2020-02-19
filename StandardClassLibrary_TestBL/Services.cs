@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace StandardClassLibraryTestBL
+﻿namespace StandardClassLibraryTestBL
 {
     public static class Services
     {
@@ -11,5 +7,8 @@ namespace StandardClassLibraryTestBL
 
         public static ICompositeFactory GetCompositeFactory()
             => new LibTiffCompositeFactory();
+
+        public static IProcessingFunctions GetProcessingFunctions()
+            => new ProcessingFunctions();
     }
 }

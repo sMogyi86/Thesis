@@ -17,11 +17,11 @@ namespace NetCore31ConsoleApp
         private readonly static string _b10Path = @"D:\Segment\L5188027_02720060719_B10.TIF";
         private readonly static TestServices testServices = new TestServices();
         private readonly static IIOService iOService = Services.GetIO();
-        private readonly static ICompositeFactory compositeFactory = Services.GetCompositeFactory();
+        private readonly static ICompositeFactory compositeFactory = Services.GetCompositeFactory();        
 
         static void Main(string[] args)
         {
-            int a = 1;
+            int a = 1;  
             int b = 2;
             double c = a / Convert.ToDouble(b);
 

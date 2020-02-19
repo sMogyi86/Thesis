@@ -38,6 +38,11 @@ namespace NetCore31WpfApp
         private readonly TestServices testServices = new TestServices();
         private readonly IIOService iOService = Services.GetIO();
         private readonly ICompositeFactory compositeFactory = Services.GetCompositeFactory();
+        private readonly IProcessingFunctions processingFunctions = Services.GetProcessingFunctions();
+
+        private IRaster myR;
+        private IRaster myG;
+        private IRaster myB;
 
         public object UserImage { get; private set; }
 
@@ -52,11 +57,21 @@ namespace NetCore31WpfApp
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            IRaster r = iOService.Load(_b40Path);
-            IRaster g = iOService.Load(_b30Path);
-            IRaster b = iOService.Load(_b30Path);
+            this.Load();
 
-            var compositeParts = new CompositeParts(r.With, r.Height, r.Data, g.Data, b.Data);
+
+        }
+
+        private void Load()
+        {
+            myR = iOService.Load(_b40Path);
+            myG = iOService.Load(_b30Path);
+            myB = iOService.Load(_b30Path);
+        }
+
+        private void TestComposite()
+        {
+            var compositeParts = new CompositeParts(myR.With, myR.Height, myR.Data, myG.Data, myB.Data);
             var img = compositeFactory.CreateComposite(compositeParts);
 
             var imageSource = new BitmapImage();
@@ -65,12 +80,6 @@ namespace NetCore31WpfApp
             imageSource.EndInit();
 
             this.UserImage = imageSource;
-        }
-
-
-        private void Testing()
-        {
-            
         }
     }
 }

@@ -6,7 +6,7 @@ namespace StandardClassLibraryTestBL
 {
     public interface IProcessingFunctions
     {
-        //void CalculateVariants(IRaster from, CalculateVariantsParam parameters);
+        void CalculateVariants(IRaster raster, CalculateVariantsParam parameters, Memory<double> destination);
     }
 
     internal class ProcessingFunctions : IProcessingFunctions
@@ -15,8 +15,7 @@ namespace StandardClassLibraryTestBL
         public void CalculateVariants(IRaster raster, CalculateVariantsParam parameters, Memory<double> destination)
         {
             int range = parameters.FilterMatrixSize;
-            int halfRange = range / 2; // extra rows count
-            int extraPixelsCount = halfRange * raster.With;
+            int extraPixelsCount = (range / 2) * raster.With;
 
             int startIdx = parameters.Start - extraPixelsCount;
             if (startIdx < 0)
@@ -30,35 +29,25 @@ namespace StandardClassLibraryTestBL
 
             }
 
-            var offsets = new int[range * range];
-            int c = 0;
-            for (int rowIdx = -halfRange; rowIdx < halfRange; rowIdx++)
-            {
-                for (int columnIdx = -halfRange; columnIdx < halfRange; columnIdx++)
-                {
-                    offsets[c] = rowIdx * raster.With + columnIdx;
-                    c++;
-                }
-            }
-
+            var offsets = Offsets.CalculateOffsetsFor(raster.With, range);
 
             var from = raster.Data.Slice(startIdx, length).Span;
-            var to = destination.Slice(startIdx, length).Span;
+            var to = destination.Span; // .Slice(startIdx, length)
             for (int i = extraPixelsCount; i < extraPixelsCount + parameters.Length; i++)
             {
                 double sum = 0.0;
-                for (int j = 0; j < offsets.Length; j++)
+                for (int j = 0; j < offsets.Count; j++)
                 {
                     sum += from[i + offsets[j]];
                 }
-                double mean = sum / offsets.Length;
+                double mean = sum / offsets.Count;
 
                 sum = 0.0;
-                for (int j = 0; j < offsets.Length; j++)
+                for (int j = 0; j < offsets.Count; j++)
                 {
                     sum += Math.Pow(mean - from[i + offsets[j]], 2);
                 }
-                double variance = sum / offsets.Length;
+                double variance = sum / offsets.Count;
 
                 to[i] = variance;
             }
