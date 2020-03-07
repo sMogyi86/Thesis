@@ -1,17 +1,17 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.Generic;
 
 namespace StandardClassLibraryTestBL
 {
     internal static class Offsets
     {
-        private readonly static IDictionary<int, IDictionary<int, int[]>> CACHE = new Dictionary<int, IDictionary<int, int[]>>();
+        private readonly static IDictionary<int, IDictionary<byte, int[]>> CACHE = new Dictionary<int, IDictionary<byte, int[]>>();
 
-        public static ReadOnlyCollection<int> CalculateOffsetsFor(int width, int range)
+        public static ReadOnlyMemory<int> CalculateOffsetsFor(int width, byte range)
         {
-            if (!CACHE.TryGetValue(width, out IDictionary<int, int[]> offsetsDict))
+            if (!CACHE.TryGetValue(width, out IDictionary<byte, int[]> offsetsDict))
             {
-                offsetsDict = CACHE[width] = new Dictionary<int, int[]>();
+                offsetsDict = CACHE[width] = new Dictionary<byte, int[]>();
             }
 
             if (!offsetsDict.TryGetValue(range, out int[] offsets))
@@ -20,9 +20,9 @@ namespace StandardClassLibraryTestBL
 
                 offsets = new int[range * range];
                 int c = 0;
-                for (int rowIdx = -halfRange; rowIdx < halfRange; rowIdx++)
+                for (int rowIdx = -halfRange; rowIdx <= halfRange; rowIdx++)
                 {
-                    for (int columnIdx = -halfRange; columnIdx < halfRange; columnIdx++)
+                    for (int columnIdx = -halfRange; columnIdx <= halfRange; columnIdx++)
                     {
                         offsets[c] = rowIdx * width + columnIdx;
                         c++;
@@ -32,7 +32,7 @@ namespace StandardClassLibraryTestBL
                 offsetsDict[range] = offsets;
             }
 
-            return new ReadOnlyCollection<int>(offsets);
+            return offsets;
         }
     }
 }

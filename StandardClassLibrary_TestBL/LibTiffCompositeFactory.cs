@@ -13,10 +13,10 @@ namespace StandardClassLibraryTestBL
     {
         public MemoryStream CreateTiff(TiffParts parts)
         {
-            var tiff = Tiff.ClientOpen("in-memory RGB composite", "w", new MemoryStream(), new TiffStream());
+            var tiff = Tiff.ClientOpen("in-memory TIFF", "w", new MemoryStream(), new TiffStream());
 
             if (tiff is null)
-                throw new IOException("Can not create composite-stream!");
+                throw new IOException("Can not create in-memory TIFF!");
 
             try
             {

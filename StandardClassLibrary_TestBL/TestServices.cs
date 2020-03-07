@@ -10,8 +10,6 @@ namespace StandardClassLibraryTestBL
 {
     public class TestServices
     {
-        IIOService iOService = new TiffIO();
-
         public IReadOnlyDictionary<TiffTag, FieldValue[]> GetTagValues(string imageName)
         {
             var tiff = Tiff.Open(imageName, "r");
@@ -27,13 +25,13 @@ namespace StandardClassLibraryTestBL
 
             return tiffTagValues;
         }
-        
+
+
+        public ReadOnlyMemory<int> CalculateOffsetsFor(int width, byte range)
+             => Offsets.CalculateOffsetsFor(width, range);
 
         public void Testing()
         {
-
-
-
         }
     }
 }

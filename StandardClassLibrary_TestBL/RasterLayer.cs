@@ -6,21 +6,21 @@ namespace StandardClassLibraryTestBL
     {
         string ID { get; }
         ReadOnlyMemory<byte> Data { get; }
-        int With { get; }
+        int Width { get; }
         int Height { get; }
     }
     public class RasterLayer : IRasterLayer
     {
         public string ID { get; }
         public ReadOnlyMemory<byte> Data { get; }
-        public int With { get; }
+        public int Width { get; }
         public int Height { get; }
 
-        public RasterLayer(string name, byte[] data, int width, int height)
+        public RasterLayer(string id, byte[] data, int width, int height)
         {
-            ID = name;
+            ID = id;
             Data = data ?? throw new ArgumentNullException(nameof(data));
-            With = width;
+            Width = width;
             Height = height;
         }
     }

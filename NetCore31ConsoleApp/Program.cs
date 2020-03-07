@@ -21,12 +21,7 @@ namespace NetCore31ConsoleApp
 
         static void Main(string[] args)
         {
-            int a = 1;  
-            int b = 2;
-            double c = a / Convert.ToDouble(b);
-
-            Console.WriteLine(c);
-           
+            Console.WriteLine((double)(double.Epsilon + byte.MaxValue));
 
             Console.WriteLine("DONE");
         }
@@ -40,7 +35,7 @@ namespace NetCore31ConsoleApp
                 IRasterLayer g = iOService.Load(_b30Path);
                 IRasterLayer b = iOService.Load(_b20Path);
 
-                var compositeParts = new TiffParts(r.With, r.Height, r.Data, g.Data, b.Data);
+                var compositeParts = new TiffParts(r.Width, r.Height, r.Data, g.Data, b.Data);
 
                 using (var c = compositeFactory.CreateTiff(compositeParts))
                 {
@@ -53,40 +48,40 @@ namespace NetCore31ConsoleApp
 
         static void PrintTags(string tiffPath)
         {
-            var tiffTagValues = testServices.GetTagValues(tiffPath);
+            //var tiffTagValues = testServices.GetTagValues(tiffPath);
 
-            foreach (var tag in tiffTagValues)
-            {
-                if (tag.Value != null)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine(tag.Key);
+            //foreach (var tag in tiffTagValues)
+            //{
+            //    if (tag.Value != null)
+            //    {
+            //        Console.WriteLine();
+            //        Console.WriteLine(tag.Key);
 
-                    foreach (var value in tag.Value)
-                    {
-                        var typ = value.Value.GetType();
-                        Console.WriteLine($"Type: {typ}");
+            //        foreach (var value in tag.Value)
+            //        {
+            //            var typ = value.Value.GetType();
+            //            Console.WriteLine($"Type: {typ}");
 
-                        var obj = value.Value;
-                        if (obj is IEnumerable)
-                        {
-                            var enumerable = (IEnumerable)obj;
-                            int c = 0;
-                            foreach (var item in enumerable)
-                            {
-                                c++;
-                                //Console.WriteLine(item);
-                            }
-                            Console.WriteLine($"Count: {c}");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Value: {obj}");
-                        }
+            //            var obj = value.Value;
+            //            if (obj is IEnumerable)
+            //            {
+            //                var enumerable = (IEnumerable)obj;
+            //                int c = 0;
+            //                foreach (var item in enumerable)
+            //                {
+            //                    c++;
+            //                    //Console.WriteLine(item);
+            //                }
+            //                Console.WriteLine($"Count: {c}");
+            //            }
+            //            else
+            //            {
+            //                Console.WriteLine($"Value: {obj}");
+            //            }
 
-                    }
-                }
-            }
+            //        }
+            //    }
+            //}
         }
 
         const string Format = "{0,7:0.000} ";
