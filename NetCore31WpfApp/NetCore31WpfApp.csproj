@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StandardClassLibrary_TestBL\StandardClassLibraryTestBL.csproj" />
+    <ProjectReference Include="..\WpfView\WpfView.csproj" />
     <ProjectReference Include="..\ZoomAndPanNetCore\ZoomAndPanNetCore.csproj" />
   </ItemGroup>
 

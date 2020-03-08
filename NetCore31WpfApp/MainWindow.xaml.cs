@@ -1,4 +1,7 @@
 ﻿using BitMiracle.LibTiff.Classic;
+using LiveCharts;
+using LiveCharts.Configurations;
+using LiveCharts.Wpf;
 using Microsoft.Win32;
 using StandardClassLibraryTestBL;
 using System;
@@ -45,10 +48,15 @@ namespace NetCore31WpfApp
         private IRasterLayer myB;
 
         public object UserImage { get; private set; }
+        public SeriesCollection SeriesCollection { get; set; }
+        public int Take { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
+
+            var xyArrayMapper = Mappers.Xy<int[]>().X(buci => buci[0]).Y(buci => buci[1]);
+            Charting.For<int[]>(xyArrayMapper);
 
             this.DataContext = this;
         }
@@ -64,13 +72,31 @@ namespace NetCore31WpfApp
             this.TestComposite();
 
             this.TestGenerateVariantImage();
+
+            var span = varsMemory.Span;
+
+            Dictionary<int, int> values = new Dictionary<int, int>();
+            for (int i = 0; i < varsMemory.Length; i++)
+            {
+                if (values.ContainsKey(span[i]))
+                    values[span[i]]++;
+                else
+                    values[span[i]] = 1;
+            }
+
+            varsValues = values.OrderBy(kvp => kvp.Key).Select(kvp => new int[2] { kvp.Key, kvp.Value }).ToList();
+
+            Take = varsValues.Count();
+
+            this.TestReclassToByte();
         }
+        private IEnumerable<int[]> varsValues;
 
         private void Load()
         {
             myR = iOService.Load(_b40Path);
             myG = iOService.Load(_b30Path);
-            myB = iOService.Load(_b30Path);
+            myB = iOService.Load(_b20Path);
         }
 
         private void TestComposite()
@@ -95,6 +121,8 @@ namespace NetCore31WpfApp
             myB = processingFunctions.Cut(myB, topLeftX, topLeftY, bottomRightX, bottomRightY);
         }
 
+        private int[] variants;
+        private Memory<int> varsMemory;
         private void TestGenerateVariantImage()
         {
             byte range = 3;
@@ -102,8 +130,8 @@ namespace NetCore31WpfApp
 
             var offsetValues = testServices.CalculateOffsetsFor(myR.Width, range);
 
-            var vars = new int[length];
-            Memory<int> variants = new Memory<int>(vars);
+            variants = new int[length];
+            varsMemory = new Memory<int>(variants);
 
             //byte count = (byte)Environment.ProcessorCount;
             //var slices = new Slicer().Slice(myR.Height, count);
@@ -116,14 +144,22 @@ namespace NetCore31WpfApp
             //    }
             //}
 
-            processingFunctions.CalculateVariants(myR.Data, variants, offsetValues);
+            processingFunctions.CalculateVariants(myR.Data, varsMemory, offsetValues);
             //processingFunctions.CalculateVariants(myG.Data, variants, offsetValues);
             //processingFunctions.CalculateVariants(myB.Data, variants, offsetValues);
+        }
 
-            Memory<byte> bytes = new Memory<byte>(new byte[length]);
-            double ratio = ((double)byte.MaxValue) / vars.Max();
-            processingFunctions.ReclassToByte(variants, bytes, ratio);
-            this.SetUserImage(new TiffParts(myR.Width, myR.Height, bytes));
+        private void TestReclassToByte()
+        {
+            Memory<double> bytes = new Memory<double>(new double[varsMemory.Length]);
+
+            int max = variants.Max();
+
+            double ratio = ((double)byte.MaxValue) / max;
+
+            processingFunctions.ReclassToByte(varsMemory, bytes, ratio);
+
+            //this.SetUserImage(new TiffParts(myR.Width, myR.Height, bytes));
 
             //double ratio = vars.Max() / 16_777_216.0; // 2ˇ(3*8)
             //processingFunctions.ReclassToRGB(variants, ratio);
@@ -134,6 +170,33 @@ namespace NetCore31WpfApp
             //processingFunctions.SplitToRGB(variants, red, green, blue);
 
             //this.SetUserImage(new TiffParts(myR.Width, myR.Height, red, green, blue));
+        }
+
+        private void TestLiveCharts()
+        {
+            var vv = varsValues.Take(Take).ToList();
+
+            SeriesCollection = new SeriesCollection
+            {
+                new LineSeries()
+                {
+                    DataLabels = false,
+                    //Values = new ChartValues<int[]>(values.Select(kvp => new int[2]{ kvp.Key, kvp.Value}).ToList())                    
+                    Values = new ChartValues<int[]>(vv)
+                }
+            };
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            this.TestLiveCharts();
+        }
+
+        private IEnumerable<T[]> Transofrm<T>(Memory<T> memory) where T : struct //, IComparable
+        {
+            List<T[]> result = null;
+
+            return null;
         }
     }
 }

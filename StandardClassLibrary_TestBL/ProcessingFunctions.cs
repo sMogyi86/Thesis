@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace StandardClassLibraryTestBL
 {
@@ -6,6 +7,7 @@ namespace StandardClassLibraryTestBL
     {
         //void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length); // , double weight
         void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues); // , double weight
+        void ReclassToByte(ReadOnlyMemory<int> source, Memory<double> destination, double ratio);
         void ReclassToByte(ReadOnlyMemory<int> source, Memory<byte> destination, double ratio);
         //void ReclassToRGB(Memory<int> variants, double ratio);
         //void SplitToRGB(ReadOnlyMemory<int> source, Memory<byte> red, Memory<byte> green, Memory<byte> blue);
@@ -85,12 +87,28 @@ namespace StandardClassLibraryTestBL
             return new RasterLayer(id is null ? $"{raster.ID}_{nameof(Cut)}" : id, buffer, dx, dy);
         }
 
+        public void ReclassToByte(ReadOnlyMemory<int> source, Memory<double> destination, double ratio)
+        {
+            var bytes = destination.Span;
+            var span = source.Span;
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                bytes[i] = ratio * span[i];
+            }
+        }
         public void ReclassToByte(ReadOnlyMemory<int> source, Memory<byte> destination, double ratio)
         {
             var bytes = destination.Span;
-            var variants = source.Span;
-            for (int i = 0; i < variants.Length; i++)
-                bytes[i] = (byte)Math.Round(variants[i] * ratio, MidpointRounding.AwayFromZero);
+            var span = source.Span;
+
+            for (int i = 0; i < span.Length; i++)
+            {
+                double mod = ratio * span[i];
+                byte byt = (byte)mod;
+                bytes[i] = byt;
+            }
+
         }
 
         //public void ReclassToRGB(Memory<int> variants, double ratio)
