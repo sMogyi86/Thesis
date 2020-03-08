@@ -55,42 +55,34 @@ namespace NetCore31WpfApp
         {
             InitializeComponent();
 
-            var xyArrayMapper = Mappers.Xy<int[]>().X(buci => buci[0]).Y(buci => buci[1]);
-            Charting.For<int[]>(xyArrayMapper);
+            Charting.For<int[]>(Mappers.Xy<int[]>().X(buci => buci[0]).Y(buci => buci[1]));
+            Charting.For<double[]>(Mappers.Xy<double[]>().X(buci => buci[0]).Y(buci => buci[1]));
+            Charting.For<Reclassed>(Mappers.Xy<Reclassed>().X(r => r.value).Y(r => r.count));
 
             this.DataContext = this;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Start(object sender, RoutedEventArgs e)
         {
             this.Load();
 
             this.TestCut();
 
-            this.TestComposite();
+            this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
 
-            this.TestGenerateVariantImage();
+            this.TestGenerateVariantValues();
 
-            var span = varsMemory.Span;
-
-            Dictionary<int, int> values = new Dictionary<int, int>();
-            for (int i = 0; i < varsMemory.Length; i++)
-            {
-                if (values.ContainsKey(span[i]))
-                    values[span[i]]++;
-                else
-                    values[span[i]] = 1;
-            }
-
-            varsValues = values.OrderBy(kvp => kvp.Key).Select(kvp => new int[2] { kvp.Key, kvp.Value }).ToList();
-
-            Take = varsValues.Count();
+            this.TestCreateCahces();
 
             this.TestReclassToByte();
         }
+
+        private Dictionary<int, int> varsDict;
         private IEnumerable<int[]> varsValues;
+        private int[] variants;
+        private Memory<int> varsMemory;
 
         private void Load()
         {
@@ -99,20 +91,6 @@ namespace NetCore31WpfApp
             myB = iOService.Load(_b20Path);
         }
 
-        private void TestComposite()
-            => this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
-
-        private void SetUserImage(TiffParts tiffParts)
-        {
-            var img = compositeFactory.CreateTiff(tiffParts);
-
-            var imageSource = new BitmapImage();
-            imageSource.BeginInit();
-            imageSource.StreamSource = img;
-            imageSource.EndInit();
-
-            this.UserImage = imageSource;
-        }
 
         private void TestCut(int topLeftX = 1800, int topLeftY = 1600, int bottomRightX = 6300, int bottomRightY = 5800)
         {
@@ -121,9 +99,7 @@ namespace NetCore31WpfApp
             myB = processingFunctions.Cut(myB, topLeftX, topLeftY, bottomRightX, bottomRightY);
         }
 
-        private int[] variants;
-        private Memory<int> varsMemory;
-        private void TestGenerateVariantImage()
+        private void TestGenerateVariantValues()
         {
             byte range = 3;
             int length = myR.Width * myR.Height;
@@ -145,21 +121,54 @@ namespace NetCore31WpfApp
             //}
 
             processingFunctions.CalculateVariants(myR.Data, varsMemory, offsetValues);
-            //processingFunctions.CalculateVariants(myG.Data, variants, offsetValues);
-            //processingFunctions.CalculateVariants(myB.Data, variants, offsetValues);
+            processingFunctions.CalculateVariants(myG.Data, variants, offsetValues);
+            processingFunctions.CalculateVariants(myB.Data, variants, offsetValues);
         }
 
+        private void TestCreateCahces()
+        {
+            var span = varsMemory.Span;
+            varsDict = new Dictionary<int, int>();
+            for (int i = 0; i < varsMemory.Length; i++)
+            {
+                if (varsDict.ContainsKey(span[i]))
+                    varsDict[span[i]]++;
+                else
+                    varsDict[span[i]] = 1;
+            }
+            varsValues = varsDict.OrderBy(kvp => kvp.Key).Select(kvp => new int[2] { kvp.Key, kvp.Value }).ToList();
+            Take = varsValues.Count();
+        }
+
+        private byte[] bytes;
+        private Memory<byte> bytesMemory;
+        private Dictionary<byte, int> bytesDict;
+        private IEnumerable<Reclassed> reclasseds;
         private void TestReclassToByte()
         {
-            Memory<double> bytes = new Memory<double>(new double[varsMemory.Length]);
+            bytes = new byte[varsMemory.Length];
+            bytesMemory = new Memory<byte>(bytes);
+            double b = Math.Pow(variants.Max(), 1.0 / byte.MaxValue);
 
-            int max = variants.Max();
+            Dictionary<int, byte> mapping = new Dictionary<int, byte>(this.varsDict.Count);
+            foreach (var integer in this.varsDict.Keys)
+                mapping[integer] = (byte)Math.Log(integer, b);
 
-            double ratio = ((double)byte.MaxValue) / max;
+            var span = bytesMemory.Span;
+            for (int i = 0; i < variants.Length; i++)
+            {
+                span[i] = mapping[variants[i]];
+            }
 
-            processingFunctions.ReclassToByte(varsMemory, bytes, ratio);
 
-            //this.SetUserImage(new TiffParts(myR.Width, myR.Height, bytes));
+
+
+            bytesDict = new Dictionary<byte, int>(this.varsDict.Count);
+            foreach (var integer in this.varsDict.Keys)
+                bytesDict[mapping[integer]] = varsDict[integer];
+
+            reclasseds = bytesDict.OrderBy(kvp => kvp.Key).Select(kvp => new Reclassed() { value = kvp.Key, count = kvp.Value }).ToList();
+
 
             //double ratio = vars.Max() / 16_777_216.0; // 2ˇ(3*8)
             //processingFunctions.ReclassToRGB(variants, ratio);
@@ -172,31 +181,81 @@ namespace NetCore31WpfApp
             //this.SetUserImage(new TiffParts(myR.Width, myR.Height, red, green, blue));
         }
 
+        private struct Reclassed
+        {
+            public byte value;
+            public int count;
+        }
+
         private void TestLiveCharts()
         {
-            var vv = varsValues.Take(Take).ToList();
+            SeriesCollection = new SeriesCollection
+            {
+                new LineSeries()
+                {
+                    DataLabels = false,
+                    Values = new ChartValues<int[]>(varsValues.Take(Take).ToList())
+                }
+            };
+        }
+
+        private void ShowVariants(object sender, RoutedEventArgs e)
+        {
+            this.TestLiveCharts();
+        }
+
+        private IEnumerable<double[]> doubles;
+        private void ShowDoubles(object sender, RoutedEventArgs e)
+        {
+            int max = variants.Max();
+
+            double ratio = ((double)byte.MaxValue) / max;
+
+            doubles = varsValues.Select(b => new double[2] { ((byte)(ratio * b[0])), b[1] }).ToList();
 
             SeriesCollection = new SeriesCollection
             {
                 new LineSeries()
                 {
                     DataLabels = false,
-                    //Values = new ChartValues<int[]>(values.Select(kvp => new int[2]{ kvp.Key, kvp.Value}).ToList())                    
-                    Values = new ChartValues<int[]>(vv)
+                    Values = new ChartValues<double[]>(doubles.Take(Take).ToList())
                 }
             };
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+
+        private void ShowBytes(object sender, RoutedEventArgs e)
         {
-            this.TestLiveCharts();
+            SeriesCollection = new SeriesCollection
+            {
+                new LineSeries()
+                {
+                    DataLabels = false,
+                    Values = new ChartValues<Reclassed>(reclasseds.Take(Take).ToList())
+                }
+            };
         }
 
-        private IEnumerable<T[]> Transofrm<T>(Memory<T> memory) where T : struct //, IComparable
+        private void SetUserImage(TiffParts tiffParts)
         {
-            List<T[]> result = null;
+            var img = compositeFactory.CreateTiff(tiffParts);
 
-            return null;
+            var imageSource = new BitmapImage();
+            imageSource.BeginInit();
+            imageSource.StreamSource = img;
+            imageSource.EndInit();
+
+            this.UserImage = imageSource;
+        }
+
+        private void Orinial(object sender, RoutedEventArgs e)
+        {
+            this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
+        }
+
+        private void Variants(object sender, RoutedEventArgs e)
+        {
+            this.SetUserImage(new TiffParts(myR.Width, myR.Height, bytesMemory));
         }
     }
 }

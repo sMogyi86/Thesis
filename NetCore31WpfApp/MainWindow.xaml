@@ -31,7 +31,9 @@
                         <TextBlock Margin="10,0" Text="{Binding ElementName=ZoomAndPanControl, Path=MousePosition.X, StringFormat=X: {0:F0}}" />
                         <TextBlock Margin="10,0" Text="{Binding ElementName=ZoomAndPanControl, Path=MousePosition.Y, StringFormat=Y: {0:F0}}" />
 
-                        <Button Click="Button_Click" Content="Nyomj meg!" />
+                        <Button Click="Start" Content="Start" />
+                        <Button Click="Variants" Content="Variants" />
+                        <Button Click="Orinial" Content="Orinial" />
 
 
                     </StackPanel>
@@ -50,12 +52,14 @@
                         DataTooltip="{x:Null}"
                         DisableAnimations="True"
                         Hoverable="False"
-                        Zoom="None"
-                        Series="{Binding SeriesCollection}" />
+                        Series="{Binding SeriesCollection}"
+                        Zoom="X" />
 
                     <StackPanel Grid.Row="1" Orientation="Horizontal">
                         <TextBox Text="{Binding Take}" />
-                        <Button Click="Button_Click_1" Content="draw plot" />
+                        <Button Click="ShowVariants" Content="variants" />
+                        <Button Click="ShowDoubles" Content="doubles" />
+                        <Button Click="ShowBytes" Content="bytes" />
                     </StackPanel>
                 </Grid>
             </TabItem>
