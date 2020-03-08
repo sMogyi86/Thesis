@@ -1,20 +1,46 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace StandardClassLibraryTestBL
 {
     public interface IProcessingFunctions
     {
-        //void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length); // , double weight
+        RasterLayer Cut(RasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id = null);
         void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues); // , double weight
-        void ReclassToByte(ReadOnlyMemory<int> source, Memory<byte> destination, double ratio);
-        //void ReclassToRGB(Memory<int> variants, double ratio);
-        //void SplitToRGB(ReadOnlyMemory<int> source, Memory<byte> red, Memory<byte> green, Memory<byte> blue);
-        IRasterLayer Cut(IRasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id = null);
+        void PopulateStats<T>(Variants<T> variants) where T : struct;
+        void ReclassToByte(Variants<int> source, Variants<byte> destination);
+        void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
     }
 
     internal class ProcessingFunctions : IProcessingFunctions
     {
+        public RasterLayer Cut(RasterLayer raster, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string id = null)
+        {
+            int dx = bottomRightX - topLeftX;
+            int dy = bottomRightY - topLeftY;
+            int newLength = dx * dy;
+
+            var buffer = new byte[newLength];
+            var memory = new Memory<byte>(buffer);
+            var target = memory.Span;
+
+            int i = 0;
+            var source = raster.Memory.Span;
+            int rowStartPos = topLeftY * raster.Width + topLeftX;
+            for (int y = 0; y < dy; y++)
+            {
+                for (int x = 0; x < dx; x++)
+                {
+                    target[i++] = source[rowStartPos + x];
+                }
+
+                rowStartPos += raster.Width;
+            }
+
+            return new RasterLayer(id is null ? $"{raster.ID}_{nameof(Cut)}" : id, buffer, dx, dy);
+        }
+
         public void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues) // , double weight
         {
             int length = source.Length;
@@ -60,68 +86,54 @@ namespace StandardClassLibraryTestBL
             }
         }
 
-        public IRasterLayer Cut(IRasterLayer raster, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string id = null)
+        public void PopulateStats<T>(Variants<T> variants) where T : struct
         {
-            int dx = bottomRightX - topLeftX;
-            int dy = bottomRightY - topLeftY;
-            int newLength = dx * dy;
-
-            var buffer = new byte[newLength];
-            var memory = new Memory<byte>(buffer);
-            var target = memory.Span;
-
-            int i = 0;
-            var source = raster.Data.Span;
-            int rowStartPos = topLeftY * raster.Width + topLeftX;
-            for (int y = 0; y < dy; y++)
-            {
-                for (int x = 0; x < dx; x++)
-                {
-                    target[i++] = source[rowStartPos + x];
-                }
-
-                rowStartPos += raster.Width;
-            }
-
-            return new RasterLayer(id is null ? $"{raster.ID}_{nameof(Cut)}" : id, buffer, dx, dy);
-        }
-              
-        public void ReclassToByte(ReadOnlyMemory<int> source, Memory<byte> destination, double ratio)
-        {
-            var bytes = destination.Span;
-            var span = source.Span;
-
+            var span = variants.Memory.Span;
+            //https://stackoverflow.com/questions/935621/whats-the-difference-between-sortedlist-and-sorteddictionary
+            var varsDict = new SortedDictionary<T, int>();
             for (int i = 0; i < span.Length; i++)
             {
-                double mod = ratio * span[i];
-                byte byt = (byte)mod;
-                bytes[i] = byt;
+                if (varsDict.ContainsKey(span[i]))
+                    varsDict[span[i]]++;
+                else
+                    varsDict[span[i]] = 1;
             }
-
+            variants.Stats = varsDict;
         }
 
-        //public void ReclassToRGB(Memory<int> variants, double ratio)
-        //{
-        //    var vars = variants.Span;
-        //    for (int i = 0; i < vars.Length; i++)
-        //    {
-        //        vars[i] = (int)Math.Round(vars[i] * ratio, MidpointRounding.AwayFromZero);
-        //    }
-        //}
+        public void ReclassToByte(Variants<int> source, Variants<byte> destination)
+        {
+            double ratio = ((double)byte.MaxValue) / source.Data.Max();
 
-        //public void SplitToRGB(ReadOnlyMemory<int> source, Memory<byte> red, Memory<byte> green, Memory<byte> blue)
-        //{
-        //    var src = source.Span;
-        //    var r = red.Span;
-        //    var g = green.Span;
-        //    var b = blue.Span;
+            Dictionary<int, byte> mapping = new Dictionary<int, byte>(source.Stats.Count);
+            foreach (var integer in source.Stats.Keys)
+                mapping[integer] = (byte)(ratio * integer);
 
-        //    for (int i = 0; i < src.Length; i++)
-        //    {
-        //        r[i] = (byte)(src[i] >> 16);
-        //        g[i] = (byte)(src[i] >> 8);
-        //        b[i] = (byte)src[i];
-        //    }
-        //}
+            this.Reclass(source, destination, mapping);
+        }
+
+        public void ReclassToByteLog(Variants<int> source, Variants<byte> destination)
+        {
+            double b = Math.Pow(source.Data.Max(), 1.0 / byte.MaxValue);
+
+            var mapping = new Dictionary<int, byte>(source.Stats.Count);
+            foreach (var integer in source.Stats.Keys)
+                mapping[integer] = (byte)Math.Log(integer, b);
+
+            this.Reclass(source, destination, mapping);
+        }
+
+        private void Reclass(Variants<int> source, Variants<byte> destination, IReadOnlyDictionary<int, byte> mapping)
+        {
+            for (int i = 0; i < source.Data.Length; i++)
+                destination.Data[i] = mapping[source.Data[i]];
+
+            var bytesStats = new Dictionary<byte, int>(source.Stats.Count);
+            foreach (var integer in source.Stats.Keys)
+                bytesStats[mapping[integer]] = source.Stats[integer];
+
+            destination.Stats = bytesStats;
+        }
+
     }
 }
