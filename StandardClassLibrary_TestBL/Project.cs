@@ -63,15 +63,9 @@ namespace StandardClassLibraryTestBL
         }
 
         public void ReclassToByte()
-        {
-            BYTES = new Variants<byte>(RAW.Data.Length);
-            myProcessingFunctions.ReclassToByte(RAW, BYTES);
-        }
+            => myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Data.Length));
 
         public void ReclassToByteLog()
-        {
-            LOGGED = new Variants<byte>(RAW.Data.Length);
-            myProcessingFunctions.ReclassToByte(RAW, LOGGED);
-        }
+            => myProcessingFunctions.ReclassToByte(RAW, LOGGED = new Variants<byte>(RAW.Data.Length));
     }
 }

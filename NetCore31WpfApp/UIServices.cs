@@ -1,12 +1,10 @@
 ﻿using Microsoft.Win32;
-using System;
-using System.Linq;
 
 namespace NetCore31WpfApp
 {
     class UIServices
     {
-        public string OpenTiff()
+        public System.Collections.Generic.IEnumerable<string> OpenTiff()
         {
             OpenFileDialog ofd =
                            new OpenFileDialog()
@@ -17,8 +15,8 @@ namespace NetCore31WpfApp
                            };
             return
                 ofd.ShowDialog().Value
-                ? ofd.FileNames.First()
-                : String.Empty;
+                ? ofd.FileNames
+                : System.Linq.Enumerable.Empty<string>();
         }
-    }        
+    }
 }

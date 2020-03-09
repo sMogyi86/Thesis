@@ -4,43 +4,123 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
     xmlns:zoomAndPan="clr-namespace:ZoomAndPan;assembly=ZoomAndPanNetCore">
-    <Grid>
+    <Grid Style="{StaticResource ContainerGridStyle}">
         <TabControl>
-            <TabItem>
+            <TabItem Header="Map">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <zoomAndPan:ZoomAndPanControl
-                        Name="ZoomAndPanControl"
+
+                    <Grid
                         Grid.Row="0"
-                        Background="Black"
-                        MinimumZoomType="FitScreen"
-                        UseAnimations="False"
-                        ZoomAndPanInitialPosition="FillScreen">
-                        <Image
-                            Name="Image"
-                            RenderOptions.BitmapScalingMode="NearestNeighbor"
-                            Source="{Binding UserImage}" />
-                    </zoomAndPan:ZoomAndPanControl>
+                        Grid.Column="0"
+                        Style="{StaticResource ContainerGridStyle}">
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
 
-                        <TextBlock FontWeight="Bold" Text="Mouse Position" />
-                        <TextBlock Margin="10,0" Text="{Binding ElementName=ZoomAndPanControl, Path=MousePosition.X, StringFormat=X: {0:F0}}" />
-                        <TextBlock Margin="10,0" Text="{Binding ElementName=ZoomAndPanControl, Path=MousePosition.Y, StringFormat=Y: {0:F0}}" />
+                        <Button
+                            Grid.Row="0"
+                            Command="{Binding OpenCommand}"
+                            Content="Open..."
+                            Style="{StaticResource ButtonStyle}" />
 
-                        <Button Click="Start" Content="Start" />
-                        <Button Click="Variants" Content="Variants" />
-                        <Button Click="Orinial" Content="Orinial" />
+                        <Button
+                            Grid.Row="1"
+                            Command="{Binding LoadCommand}"
+                            Content="Load"
+                            Style="{StaticResource ButtonStyle}" />
 
+                        <StackPanel Grid.Row="2" Style="{StaticResource ContainerStackPanelStyle}">
+                            <Label Content="Chanels" />
+                            <ComboBox ItemsSource="{Binding Chanels}" />
+                        </StackPanel>
 
-                    </StackPanel>
+                        <StackPanel Grid.Row="3" Style="{StaticResource ContainerStackPanelStyle}">
+                            <Button
+                                Command="{Binding TopLeftCommand}"
+                                Content="TopLeft"
+                                Style="{StaticResource ButtonStyle}" />
+                            <TextBox Text="{Binding TopLeftPoint}" />
+
+                            <Button
+                                Command="{Binding BottomRightCommand}"
+                                Content="BottomRight"
+                                Style="{StaticResource ButtonStyle}" />
+                            <TextBox Text="{Binding BottomRightPoint}" />
+
+                            <Button
+                                Command="{Binding CutCommand}"
+                                Content="Cut"
+                                Style="{StaticResource ButtonStyle}" />
+                        </StackPanel>
+
+                        <Button
+                            Grid.Row="4"
+                            Command="{Binding VariantsCommand}"
+                            Content="Variants"
+                            Style="{StaticResource ButtonStyle}" />
+
+                    </Grid>
+
+                    <Grid Grid.Row="0" Grid.Column="1">
+                        <zoomAndPan:ZoomAndPanControl
+                            Name="ZoomAndPanControl"
+                            Background="Black"
+                            MinimumZoomType="FitScreen"
+                            UseAnimations="False"
+                            ZoomAndPanInitialPosition="FillScreen">
+                            <Image
+                                Name="Image"
+                                RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                Source="{Binding UserImage}" />
+                        </zoomAndPan:ZoomAndPanControl>
+
+                        <ComboBox
+                            Margin="3"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Top"
+                            ItemsSource="{Binding Maps}" />
+
+                        <Button
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding SaveCurrentMapCommand}"
+                            Content="Save"
+                            Style="{StaticResource ButtonStyle}" />
+
+                    </Grid>
+
+                    <Grid
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <TextBlock Text="Mouse Position" />
+                            <TextBlock Margin="3,0" Text="{Binding ElementName=ZoomAndPanControl, Path=MousePosition.X, StringFormat=X: {0:F0}}" />
+                            <TextBlock Margin="3,0" Text="{Binding ElementName=ZoomAndPanControl, Path=MousePosition.Y, StringFormat=Y: {0:F0}}" />
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </TabItem>
 
-            <TabItem>
+            <TabItem Header="Stats">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
@@ -55,12 +135,12 @@
                         Series="{Binding SeriesCollection}"
                         Zoom="X" />
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                    <!--<StackPanel Grid.Row="1" Orientation="Horizontal">
                         <TextBox Text="{Binding Take}" />
                         <Button Click="ShowVariants" Content="variants" />
                         <Button Click="ShowDoubles" Content="doubles" />
                         <Button Click="ShowBytes" Content="bytes" />
-                    </StackPanel>
+                    </StackPanel>-->
                 </Grid>
             </TabItem>
         </TabControl>

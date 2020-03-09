@@ -58,20 +58,20 @@ namespace NetCore31WpfApp
 
         private void Start(object sender, RoutedEventArgs e)
         {
-            this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
+            //this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
         }
 
      
         private void TestLiveCharts()
         {
-            SeriesCollection = new SeriesCollection
-            {
-                new LineSeries()
-                {
-                    DataLabels = false,
-                    Values = new ChartValues<int[]>(varsValues.Take(Take).ToList())
-                }
-            };
+            //SeriesCollection = new SeriesCollection
+            //{
+            //    new LineSeries()
+            //    {
+            //        DataLabels = false,
+            //        Values = new ChartValues<int[]>(varsValues.Take(Take).ToList())
+            //    }
+            //};
         }
 
     
@@ -89,14 +89,14 @@ namespace NetCore31WpfApp
             this.UserImage = imageSource;
         }
 
-        private void Orinial(object sender, RoutedEventArgs e)
+        private void Original(object sender, RoutedEventArgs e)
         {
-            this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
+            //this.SetUserImage(new TiffParts(myR.Width, myR.Height, myR.Data, myG.Data, myB.Data));
         }
 
         private void Variants(object sender, RoutedEventArgs e)
         {
-            this.SetUserImage(new TiffParts(myR.Width, myR.Height, bytesMemory));
+            //this.SetUserImage(new TiffParts(myR.Width, myR.Height, bytesMemory));
         }
 
 

@@ -107,7 +107,7 @@ namespace StandardClassLibraryTestBL
 
             Dictionary<int, byte> mapping = new Dictionary<int, byte>(source.Stats.Count);
             foreach (var integer in source.Stats.Keys)
-                mapping[integer] = (byte)(ratio * integer);
+                mapping[integer] = (byte)Math.Round(ratio * integer, MidpointRounding.AwayFromZero);
 
             this.Reclass(source, destination, mapping);
         }
@@ -118,7 +118,7 @@ namespace StandardClassLibraryTestBL
 
             var mapping = new Dictionary<int, byte>(source.Stats.Count);
             foreach (var integer in source.Stats.Keys)
-                mapping[integer] = (byte)Math.Log(integer, b);
+                mapping[integer] = (byte)Math.Round(Math.Log(integer, b), MidpointRounding.AwayFromZero);
 
             this.Reclass(source, destination, mapping);
         }
