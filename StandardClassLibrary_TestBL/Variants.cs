@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
     public class Variants<T> where T : struct
     {

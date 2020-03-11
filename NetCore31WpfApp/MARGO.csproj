@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>MARGO</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\StandardClassLibrary_TestBL\StandardClassLibraryTestBL.csproj" />
+    <ProjectReference Include="..\StandardClassLibrary_TestBL\BL.csproj" />
     <ProjectReference Include="..\WpfView\WpfView.csproj" />
     <ProjectReference Include="..\ZoomAndPanNetCore\ZoomAndPanNetCore.csproj" />
   </ItemGroup>

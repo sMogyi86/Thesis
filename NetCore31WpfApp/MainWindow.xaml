@@ -1,12 +1,17 @@
 ﻿<Window
-    x:Class="NetCore31WpfApp.MainWindow"
+    x:Class="MARGO.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+    xmlns:m="clr-namespace:MARGO"
     xmlns:zoomAndPan="clr-namespace:ZoomAndPan;assembly=ZoomAndPanNetCore">
+
     <Grid Style="{StaticResource ContainerGridStyle}">
         <TabControl>
             <TabItem Header="Map">
+                <TabItem.DataContext>
+                    <m:MapVM />
+                </TabItem.DataContext>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -44,21 +49,29 @@
                             Style="{StaticResource ButtonStyle}" />
 
                         <StackPanel Grid.Row="2" Style="{StaticResource ContainerStackPanelStyle}">
-                            <Label Content="Chanels" />
-                            <ComboBox ItemsSource="{Binding Chanels}" />
+                            <Label Content="Red" />
+                            <ComboBox ItemsSource="{Binding Chanels}" SelectedItem="{Binding Red}" />
+                            <Label Content="Green" />
+                            <ComboBox ItemsSource="{Binding Chanels}" SelectedItem="{Binding Green}" />
+                            <Label Content="Blue" />
+                            <ComboBox ItemsSource="{Binding Chanels}" SelectedItem="{Binding Blue}" />
+                            <Button
+                                Command="{Binding ComposeCommand}"
+                                Content="Compose"
+                                Style="{StaticResource ButtonStyle}" />
                         </StackPanel>
 
                         <StackPanel Grid.Row="3" Style="{StaticResource ContainerStackPanelStyle}">
-                            <Button
+                            <!--<Button
                                 Command="{Binding TopLeftCommand}"
                                 Content="TopLeft"
-                                Style="{StaticResource ButtonStyle}" />
+                                Style="{StaticResource ButtonStyle}" />-->
                             <TextBox Text="{Binding TopLeftPoint}" />
 
-                            <Button
+                            <!--<Button
                                 Command="{Binding BottomRightCommand}"
                                 Content="BottomRight"
-                                Style="{StaticResource ButtonStyle}" />
+                                Style="{StaticResource ButtonStyle}" />-->
                             <TextBox Text="{Binding BottomRightPoint}" />
 
                             <Button
@@ -67,11 +80,14 @@
                                 Style="{StaticResource ButtonStyle}" />
                         </StackPanel>
 
-                        <Button
-                            Grid.Row="4"
-                            Command="{Binding VariantsCommand}"
-                            Content="Variants"
-                            Style="{StaticResource ButtonStyle}" />
+                        <StackPanel Grid.Row="4">
+                            <TextBox Text="{Binding Range}" />
+                            <Button
+                                Command="{Binding VariantsCommand}"
+                                CommandParameter="{Binding Range}"
+                                Content="Variants"
+                                Style="{StaticResource ButtonStyle}" />
+                        </StackPanel>
 
                     </Grid>
 
@@ -85,19 +101,21 @@
                             <Image
                                 Name="Image"
                                 RenderOptions.BitmapScalingMode="NearestNeighbor"
-                                Source="{Binding UserImage}" />
+                                Source="{Binding ImageSource, Mode=OneWay}" />
                         </zoomAndPan:ZoomAndPanControl>
 
                         <ComboBox
                             Margin="3"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
-                            ItemsSource="{Binding Maps}" />
+                            ItemsSource="{Binding Maps}"
+                            SelectedItem="{Binding CurrentMap}" />
 
                         <Button
                             HorizontalAlignment="Right"
                             VerticalAlignment="Bottom"
-                            Command="{Binding SaveCurrentMapCommand}"
+                            Command="{Binding SaveMapCommand}"
+                            CommandParameter="{Binding CurrentMap}"
                             Content="Save"
                             Style="{StaticResource ButtonStyle}" />
 

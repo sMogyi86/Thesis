@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCore31WpfApp", "NetCore31WpfApp\NetCore31WpfApp.csproj", "{FF4A32EC-352F-4F86-9E19-81A7B289A86C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MARGO", "NetCore31WpfApp\MARGO.csproj", "{FF4A32EC-352F-4F86-9E19-81A7B289A86C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ZoomAndPanNetCore", "ZoomAndPanNetCore\ZoomAndPanNetCore.csproj", "{16816B20-2A2B-4B9E-948F-81F90F7E3226}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibTiff", "LibTiff\LibTiff.csproj", "{FC27A562-4F10-40D9-A924-0091F95D56A1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NetCore31ConsoleApp", "NetCore31ConsoleApp\NetCore31ConsoleApp.csproj", "{37A12E94-7277-4F9A-A3EB-302857F57130}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SandBoxConsoleApp", "NetCore31ConsoleApp\SandBoxConsoleApp.csproj", "{37A12E94-7277-4F9A-A3EB-302857F57130}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StandardClassLibraryTestBL", "StandardClassLibrary_TestBL\StandardClassLibraryTestBL.csproj", "{47E6ECBD-6674-4F82-87EC-57C823FD31E7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BL", "StandardClassLibrary_TestBL\BL.csproj", "{47E6ECBD-6674-4F82-87EC-57C823FD31E7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "0_ThirdParty", "0_ThirdParty", "{B0D82B12-C14E-4EEF-A9B6-EFB2877C515D}"
 EndProject

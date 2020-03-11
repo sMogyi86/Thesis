@@ -1,19 +1,20 @@
 ﻿using BitMiracle.LibTiff.Classic;
-using System.Linq;
 using System.IO;
+using System.Threading.Tasks;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
     public interface IIOService
     {
         RasterLayer Load(string ID);
+        Task Save(Image image, string ID);
     }
 
     internal sealed class TiffIO : IIOService
     {
-        public RasterLayer Load(string imagePath)
+        public RasterLayer Load(string ID)
         {
-            using (var tiff = Tiff.Open(imagePath, "r"))
+            using (var tiff = Tiff.Open(ID, "r"))
             {
                 if (tiff != null)
                 {
@@ -35,12 +36,21 @@ namespace StandardClassLibraryTestBL
                     }
 
                     tiff.Close();
-
-                    return new RasterLayer(imagePath, raster, bytesPerRow, height);
+                    
+                    return new RasterLayer(Path.GetFileNameWithoutExtension(ID), raster, bytesPerRow, height);
                 }
             }
 
-            throw new IOException($"Can't open image! [{imagePath}]");
+            throw new IOException($"Can't open image! [{ID}]");
+        }
+
+        public async Task Save(Image image, string ID)
+        {
+            using (FileStream fileStream = new FileStream(ID, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                await image.Stream.CopyToAsync(fileStream).ConfigureAwait(false);
+                await fileStream.FlushAsync().ConfigureAwait(false);
+            }
         }
     }
 }

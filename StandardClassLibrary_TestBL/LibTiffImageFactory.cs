@@ -1,17 +1,19 @@
 ﻿using BitMiracle.LibTiff.Classic;
-using System;
 using System.IO;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
-    public interface ICompositeFactory
+    public interface IImageFactory
     {
-        MemoryStream CreateTiff(TiffParts from);
+        Image CreateImage(string name, ImageParts from);
     }
 
-    internal sealed class LibTiffCompositeFactory : ICompositeFactory
+    internal sealed class LibTiffImageFactory : IImageFactory
     {
-        public MemoryStream CreateTiff(TiffParts parts)
+        public Image CreateImage(string name, ImageParts parts)
+            => new Image(name, parts, this.Build);
+
+        private MemoryStream Build(ImageParts parts)
         {
             var tiff = Tiff.ClientOpen("in-memory TIFF", "w", new MemoryStream(), new TiffStream());
 
@@ -51,7 +53,7 @@ namespace StandardClassLibraryTestBL
             }
         }
 
-        private void WriteMono(TiffParts parts, Tiff tiff)
+        private void WriteMono(ImageParts parts, Tiff tiff)
         {
             var mono = parts.Mono.Span;
 
@@ -66,7 +68,7 @@ namespace StandardClassLibraryTestBL
             }
         }
 
-        private void WriteRGB(TiffParts parts, Tiff tiff)
+        private void WriteRGB(ImageParts parts, Tiff tiff)
         {
             int samplesPerPixel = 3;
 
@@ -87,38 +89,6 @@ namespace StandardClassLibraryTestBL
                 if (!tiff.WriteScanline(rowData, rowIndex))
                     throw new IOException(@"Image data were NOT encoded and written successfully!");
             }
-        }
-    }
-
-    public class TiffParts
-    {
-        public bool IsMono { get; }
-        public int Width { get; }
-        public int Height { get; }
-        public ReadOnlyMemory<byte> Red { get; }
-        public ReadOnlyMemory<byte> Green { get; }
-        public ReadOnlyMemory<byte> Blue { get; }
-        public ReadOnlyMemory<byte> Mono { get; }
-
-        private TiffParts(int width, int height, bool isMono)
-        {
-            Width = width;
-            Height = height;
-            IsMono = isMono;
-        }
-
-        public TiffParts(int width, int height, ReadOnlyMemory<byte> mono)
-            : this(width, height, true)
-        {
-            Mono = mono;
-        }
-
-        public TiffParts(int width, int height, ReadOnlyMemory<byte> red, ReadOnlyMemory<byte> green, ReadOnlyMemory<byte> blue)
-            : this(width, height, false)
-        {
-            Red = red;
-            Green = green;
-            Blue = blue;
         }
     }
 }

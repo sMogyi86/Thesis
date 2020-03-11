@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
     public class RasterLayer
     {
@@ -16,5 +16,8 @@ namespace StandardClassLibraryTestBL
             Width = width;
             Height = height;
         }
+
+        public override string ToString()
+            => ID;
     }
 }

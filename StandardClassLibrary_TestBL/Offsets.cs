@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
     internal static class Offsets
     {

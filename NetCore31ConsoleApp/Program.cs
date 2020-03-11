@@ -1,11 +1,11 @@
-﻿using StandardClassLibraryTestBL;
+﻿using MARGO.BL;
 using System;
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace NetCore31ConsoleApp
+namespace SandBoxConsoleApp
 {
     class Program
     {

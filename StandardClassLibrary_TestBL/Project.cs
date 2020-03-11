@@ -2,8 +2,9 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
     public class Project
     {
@@ -36,7 +37,7 @@ namespace StandardClassLibraryTestBL
 
         public void Load()
         {
-            foreach (var id in myLayers.Keys)
+            foreach (var id in myLayers.Keys.ToArray())
                 myLayers[id] = myIOService.Load(id);
         }
 
@@ -67,5 +68,8 @@ namespace StandardClassLibraryTestBL
 
         public void ReclassToByteLog()
             => myProcessingFunctions.ReclassToByte(RAW, LOGGED = new Variants<byte>(RAW.Data.Length));
+
+        public async Task Save(Image image, string id)
+            => await myIOService.Save(image, id).ConfigureAwait(false);
     }
 }

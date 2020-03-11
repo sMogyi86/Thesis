@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 
-namespace StandardClassLibraryTestBL
+namespace MARGO.BL
 {
     public interface IProcessingFunctions
     {
