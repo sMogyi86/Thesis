@@ -3,7 +3,7 @@ using System.Windows.Input;
 
 namespace MARGO.MVVM
 {
-    internal class DelegateCommand<T> : ICommand
+    public class DelegateCommand<T> : ICommand
     {
         #region Private fields
         private readonly Action<T> action = null;

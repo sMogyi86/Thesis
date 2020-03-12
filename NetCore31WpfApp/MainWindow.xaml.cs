@@ -1,5 +1,6 @@
 ﻿using LiveCharts;
 using LiveCharts.Configurations;
+using MARGO.MVVM;
 using System.Windows;
 
 namespace MARGO

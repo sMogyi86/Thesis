@@ -13,61 +13,60 @@ namespace MARGO.BL
         private readonly IProcessingFunctions myProcessingFunctions = Services.GetProcessingFunctions();
         #endregion
 
+        public static Project Instance { get; } = new Project();
 
-
-        private readonly Dictionary<string, RasterLayer> myLayers;
-        public IReadOnlyDictionary<string, RasterLayer> Layers => myLayers;
+        private Dictionary<string, RasterLayer> myOriginalLayers = new Dictionary<string, RasterLayer>();
+        private Dictionary<string, RasterLayer> myCutedLayers = new Dictionary<string, RasterLayer>();
+        public IEnumerable<RasterLayer> Layers =>  myOriginalLayers.Values.Concat(myCutedLayers.Values);
         public Variants<int> RAW { get; private set; }
         public Variants<byte> BYTES { get; private set; }
         public Variants<byte> LOGGED { get; private set; }
 
 
+        private Project() { }
 
-        public Project(IEnumerable<string> ids)
+        public void Load(IEnumerable<string> ids)
         {
             if (ids is null || !ids.Any())
                 throw new ArgumentNullException(nameof(ids));
 
-            myLayers = new Dictionary<string, RasterLayer>(ids.Count());
+            myOriginalLayers = new Dictionary<string, RasterLayer>(ids.Count());
             foreach (var id in ids)
-                myLayers[id] = null;
-        }
+                myOriginalLayers[id] = myIOService.Load(id);
 
-
-
-        public void Load()
-        {
-            foreach (var id in myLayers.Keys.ToArray())
-                myLayers[id] = myIOService.Load(id);
+            myCutedLayers = new Dictionary<string, RasterLayer>(myOriginalLayers.Count);
         }
 
         public void Cut(int topLeftX = 1800, int topLeftY = 1600, int bottomRightX = 6300, int bottomRightY = 5800)
         {
-            foreach (var kvp in myLayers)
-                myLayers[kvp.Key] = myProcessingFunctions.Cut(kvp.Value, topLeftX, topLeftY, bottomRightX, bottomRightY);
+            foreach (var layer in myOriginalLayers.Values)
+            {
+                var cl = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY);
+                myCutedLayers[cl.ID] = cl;
+            }
+
         }
 
-        public void CalculateVariantsWithStats(byte range = 3)
+        public void CalculateVariantsWithStats(byte range)
         {
             IProcessingFunctions processingFunctions = Services.GetProcessingFunctions();
 
-            var firstLayer = myLayers.First().Value;
-            int length = firstLayer.Width * firstLayer.Height;
-            RAW = new Variants<int>(length);
+            var firstLayer = myCutedLayers.First().Value;
+            RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
 
             var offsetValues = Offsets.CalculateOffsetsFor(firstLayer.Width, range);
 
-            foreach (var layer in myLayers.Values)
+            foreach (var layer in myCutedLayers.Values)
                 myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues);
 
             processingFunctions.PopulateStats(RAW);
         }
 
         public void ReclassToByte()
-            => myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Data.Length));
+            => myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Width, RAW.Height));
 
         public void ReclassToByteLog()
-            => myProcessingFunctions.ReclassToByte(RAW, LOGGED = new Variants<byte>(RAW.Data.Length));
+            => myProcessingFunctions.ReclassToByteLog(RAW, LOGGED = new Variants<byte>(RAW.Width, RAW.Height));
 
         public async Task Save(Image image, string id)
             => await myIOService.Save(image, id).ConfigureAwait(false);

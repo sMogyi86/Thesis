@@ -119,6 +119,7 @@ namespace MARGO.BL
             var mapping = new Dictionary<int, byte>(source.Stats.Count);
             foreach (var integer in source.Stats.Keys)
                 mapping[integer] = (byte)Math.Round(Math.Log(integer, b), MidpointRounding.AwayFromZero);
+                //mapping[integer] = (byte)Math.Log(integer, b);
 
             this.Reclass(source, destination, mapping);
         }
