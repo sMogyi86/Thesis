@@ -17,7 +17,7 @@ namespace MARGO.BL
 
         private Dictionary<string, RasterLayer> myOriginalLayers = new Dictionary<string, RasterLayer>();
         private Dictionary<string, RasterLayer> myCutedLayers = new Dictionary<string, RasterLayer>();
-        public IEnumerable<RasterLayer> Layers =>  myOriginalLayers.Values.Concat(myCutedLayers.Values);
+        public IEnumerable<RasterLayer> Layers => myOriginalLayers.Values.Concat(myCutedLayers.Values);
         public Variants<int> RAW { get; private set; }
         public Variants<byte> BYTES { get; private set; }
         public Variants<byte> LOGGED { get; private set; }
@@ -49,8 +49,6 @@ namespace MARGO.BL
 
         public void CalculateVariantsWithStats(byte range)
         {
-            IProcessingFunctions processingFunctions = Services.GetProcessingFunctions();
-
             var firstLayer = myCutedLayers.First().Value;
             RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
 
@@ -59,7 +57,39 @@ namespace MARGO.BL
             foreach (var layer in myCutedLayers.Values)
                 myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues);
 
-            processingFunctions.PopulateStats(RAW);
+            myProcessingFunctions.PopulateStats(RAW);
+        }
+
+        public async Task CalculateVariantsWithStatsAsync(byte range)
+        {
+            var firstLayer = myCutedLayers.First().Value;
+            RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
+
+            var offsetValues = Offsets.CalculateOffsetsFor(firstLayer.Width, range);
+
+            var slicer = new Slicer();
+            int pc = Environment.ProcessorCount;
+            var lengths = slicer.Slice(myCutedLayers.First().Value.Memory.Length, pc);
+            var tasks = new Task[pc];
+
+            int start = 0;
+            int i = 0;
+            foreach (var l in lengths)
+            {
+                int sectionStart = start;
+
+                tasks[i++] = Task.Run(() =>
+                {
+                    foreach (var layer in myCutedLayers.Values)
+                        myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues, sectionStart, l);
+                });
+
+                start += l;
+            }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+
+            myProcessingFunctions.PopulateStats(RAW);
         }
 
         public void ReclassToByte()

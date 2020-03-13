@@ -72,9 +72,12 @@ namespace MARGO
 
         public byte Range { get; set; } = 3;
         public ICommand VariantsCommand => new DelegateCommand<byte?>(
-            range =>
+            async range =>
             {
-                Project.CalculateVariantsWithStats(range.Value);
+                await Project.CalculateVariantsWithStatsAsync(range.Value);
+
+                myUIServices.ShowInfo($"{nameof(Project.CalculateVariantsWithStatsAsync)} done.");
+
                 this.RaisePropertyChanged(nameof(AsBytesCommand));
                 this.RaisePropertyChanged(nameof(LoggedBytesCommand));
             },

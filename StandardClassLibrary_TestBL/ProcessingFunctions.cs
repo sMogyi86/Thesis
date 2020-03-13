@@ -8,6 +8,7 @@ namespace MARGO.BL
     {
         RasterLayer Cut(RasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id = null);
         void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues); // , double weight
+        void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length);
         void PopulateStats<T>(Variants<T> variants) where T : struct;
         void ReclassToByte(Variants<int> source, Variants<byte> destination);
         void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
@@ -42,14 +43,17 @@ namespace MARGO.BL
         }
 
         public void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues) // , double weight
+            => CalculateVariants(source, destination, offsetsValues, 0, source.Length);
+
+        public void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length)
         {
-            int length = source.Length;
+            int srcLength = source.Length;
             int filterSize = offsetsValues.Length;
 
             var offsets = offsetsValues.Span;
             var from = source.Span;
             var to = destination.Span;
-            for (int i = 0; i < length; i++)
+            for (int i = start; i < (start + length); i++)
             {
                 int sum = 0;
                 for (int j = 0; j < filterSize; j++)
@@ -57,10 +61,10 @@ namespace MARGO.BL
                     int k = i + offsets[j];
 
                     if (k < 0)
-                        k += length;
+                        k += srcLength;
 
-                    if (k >= length)
-                        k -= length;
+                    if (k >= srcLength)
+                        k -= srcLength;
 
                     sum += from[k];
                 }
@@ -72,10 +76,10 @@ namespace MARGO.BL
                     int k = i + offsets[j];
 
                     if (k < 0)
-                        k += length;
+                        k += srcLength;
 
-                    if (k >= length)
-                        k -= length;
+                    if (k >= srcLength)
+                        k -= srcLength;
 
                     int d = mean - from[k];
                     sum += (d * d);
@@ -119,7 +123,7 @@ namespace MARGO.BL
             var mapping = new Dictionary<int, byte>(source.Stats.Count);
             foreach (var integer in source.Stats.Keys)
                 mapping[integer] = (byte)Math.Round(Math.Log(integer, b), MidpointRounding.AwayFromZero);
-                //mapping[integer] = (byte)Math.Log(integer, b);
+            //mapping[integer] = (byte)Math.Log(integer, b);
 
             this.Reclass(source, destination, mapping);
         }
@@ -135,6 +139,5 @@ namespace MARGO.BL
 
             destination.Stats = bytesStats;
         }
-
     }
 }
