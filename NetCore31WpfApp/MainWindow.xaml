@@ -34,6 +34,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -96,6 +97,12 @@
                             Grid.Row="5"
                             Command="{Binding LoggedBytesCommand}"
                             Content="Logged bytes"
+                            Style="{StaticResource ButtonStyle}" />
+
+                        <Button
+                            Grid.Row="6"
+                            Command="{Binding MinimasCommand}"
+                            Content="Minimas"
                             Style="{StaticResource ButtonStyle}" />
 
                     </Grid>

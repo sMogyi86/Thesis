@@ -137,5 +137,13 @@ namespace MARGO
             },
             () => Project.RAW != null);
 
+        public ICommand MinimasCommand => new DelegateCommand(
+            async () =>
+            {
+                await Project.FindMinimasAsync();
+
+                Maps.Add(myImageFactory.CreateImage(nameof(Project.FindMinimasAsync), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
+                CurrentMap = Maps.Last();
+            });
     }
 }

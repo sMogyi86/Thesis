@@ -12,6 +12,7 @@ namespace MARGO.BL
         void PopulateStats<T>(Variants<T> variants) where T : struct;
         void ReclassToByte(Variants<int> source, Variants<byte> destination);
         void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
+        void FindMinimas(ReadOnlyMemory<byte> variants, Memory<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length);
     }
 
     internal class ProcessingFunctions : IProcessingFunctions
@@ -123,7 +124,6 @@ namespace MARGO.BL
             var mapping = new Dictionary<int, byte>(source.Stats.Count);
             foreach (var integer in source.Stats.Keys)
                 mapping[integer] = (byte)Math.Round(Math.Log(integer, b), MidpointRounding.AwayFromZero);
-            //mapping[integer] = (byte)Math.Log(integer, b);
 
             this.Reclass(source, destination, mapping);
         }
@@ -138,6 +138,45 @@ namespace MARGO.BL
                 bytesStats[mapping[integer]] = source.Stats[integer];
 
             destination.Stats = bytesStats;
+        }
+
+        /// <summary>
+        /// <paramref name="offsetsValues"/> must be for range = 3!
+        /// </summary>
+        /// <param name="variants"></param>
+        /// <param name="minimas"></param>
+        /// <param name="offsetsValues"></param>
+        /// <param name="start"></param>
+        /// <param name="length"></param>
+        public void FindMinimas(ReadOnlyMemory<byte> variants, Memory<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length)
+        {
+            int srcLength = variants.Length;
+            int filterSize = offsetsValues.Length;
+
+            var offsets = offsetsValues.Span;
+            var from = variants.Span;
+            var to = minimas.Span;
+
+            for (int i = start; i < (start + length); i++)
+            {
+                int minIdx = i;
+                for (int j = 0; j < filterSize; j++)
+                {
+                    int k = i + offsets[j];
+
+                    if (k < 0)
+                        k += srcLength;
+
+                    if (k >= srcLength)
+                        k -= srcLength;
+
+                    if (from[k] <= from[minIdx])
+                        minIdx = k;
+                }
+
+                if (minIdx == i)
+                    to[i] = i;
+            }
         }
     }
 }
