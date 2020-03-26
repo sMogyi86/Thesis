@@ -1,4 +1,5 @@
 ﻿using BitMiracle.LibTiff.Classic;
+using MARGO.BL.Img;
 using System.IO;
 using System.Threading.Tasks;
 

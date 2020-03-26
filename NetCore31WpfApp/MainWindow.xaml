@@ -35,6 +35,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -103,6 +104,12 @@
                             Grid.Row="6"
                             Command="{Binding MinimasCommand}"
                             Content="Minimas"
+                            Style="{StaticResource ButtonStyle}" />
+
+                        <Button
+                            Grid.Row="7"
+                            Command="{Binding FloodCommand}"
+                            Content="Flood"
                             Style="{StaticResource ButtonStyle}" />
 
                     </Grid>

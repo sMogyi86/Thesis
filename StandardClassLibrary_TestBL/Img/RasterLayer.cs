@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MARGO.BL
+namespace MARGO.BL.Img
 {
     public class RasterLayer
     {

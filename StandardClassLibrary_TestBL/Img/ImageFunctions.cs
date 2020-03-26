@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Collections.Generic;
 
-namespace MARGO.BL
+namespace MARGO.BL.Img
 {
-    public interface IProcessingFunctions
+    public interface IImageFunctions
     {
         RasterLayer Cut(RasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id = null);
         void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues); // , double weight
@@ -12,10 +12,10 @@ namespace MARGO.BL
         void PopulateStats<T>(Variants<T> variants) where T : struct;
         void ReclassToByte(Variants<int> source, Variants<byte> destination);
         void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
-        void FindMinimas(ReadOnlyMemory<byte> variants, Memory<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length);
+        void FindMinimas(ReadOnlyMemory<byte> variants, Memory<byte> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length);
     }
 
-    internal class ProcessingFunctions : IProcessingFunctions
+    internal class ImageFunctions : IImageFunctions
     {
         public RasterLayer Cut(RasterLayer raster, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string id = null)
         {
@@ -140,6 +140,7 @@ namespace MARGO.BL
             destination.Stats = bytesStats;
         }
 
+        // TODO only range = 3 for sure?
         /// <summary>
         /// <paramref name="offsetsValues"/> must be for range = 3!
         /// </summary>
@@ -148,7 +149,7 @@ namespace MARGO.BL
         /// <param name="offsetsValues"></param>
         /// <param name="start"></param>
         /// <param name="length"></param>
-        public void FindMinimas(ReadOnlyMemory<byte> variants, Memory<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length)
+        public void FindMinimas(ReadOnlyMemory<byte> variants, Memory<byte> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length)
         {
             int srcLength = variants.Length;
             int filterSize = offsetsValues.Length;
@@ -170,12 +171,18 @@ namespace MARGO.BL
                     if (k >= srcLength)
                         k -= srcLength;
 
-                    if (from[k] <= from[minIdx])
+                    if (from[k] < from[minIdx])
+                    {
                         minIdx = k;
+                    }
+                    else if (from[k] == from[minIdx])
+                    {
+                        minIdx = k >= minIdx ? k : minIdx;
+                    }
                 }
 
                 if (minIdx == i)
-                    to[i] = i;
+                    to[i] = byte.MaxValue; // from[i]; // i;
             }
         }
     }

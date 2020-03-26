@@ -25,6 +25,26 @@ namespace MARGO.BL
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
+        public async Task<T[]> PerformAsync<T>(int volume, int sliceCount, Func<int, int, T> func)
+        {
+            var lengths = this.Intervals(volume, sliceCount);
+            var tasks = new Task<T>[sliceCount];
+
+            int start = 0;
+            int i = 0;
+            foreach (var l in lengths)
+            {
+                int sectionStart = start;
+
+                tasks[i++] = Task.Run(() => func(sectionStart, l));
+
+                start += l;
+            }
+
+            return await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+
         private IEnumerable<int> Intervals(int num, int count)
         {
             int normalSize = num / count;

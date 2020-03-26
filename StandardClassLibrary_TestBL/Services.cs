@@ -1,4 +1,6 @@
-﻿namespace MARGO.BL
+﻿using MARGO.BL.Img;
+
+namespace MARGO.BL
 {
     public static class Services
     {
@@ -8,7 +10,7 @@
         public static IImageFactory GetImageFactory()
             => new LibTiffImageFactory();
 
-        public static IProcessingFunctions GetProcessingFunctions()
-            => new ProcessingFunctions();
+        public static IImageFunctions GetProcessingFunctions()
+            => new ImageFunctions();
     }
 }

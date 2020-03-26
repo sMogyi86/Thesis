@@ -1,13 +1,10 @@
 ﻿using MARGO.BL;
+using MARGO.BL.Img;
 using MARGO.MVVM;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
-using System.IO;
-using System.Text;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -142,8 +139,15 @@ namespace MARGO
             {
                 await Project.FindMinimasAsync();
 
-                Maps.Add(myImageFactory.CreateImage(nameof(Project.FindMinimasAsync), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
+                Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
                 CurrentMap = Maps.Last();
             });
+
+        public ICommand FloodCommand => new DelegateCommand(
+            async () =>
+            {
+                await Project.FloodAsync();
+            }
+            );
     }
 }

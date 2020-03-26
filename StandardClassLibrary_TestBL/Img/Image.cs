@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MARGO.BL
+namespace MARGO.BL.Img
 {
     public class Image
     {

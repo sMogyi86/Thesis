@@ -11,35 +11,25 @@ namespace SandBoxConsoleApp
 {
     class Program
     {
+        private readonly static string _b40Path = @"D:\Segment\L5188027_02720060719_B40.TIF";
+        private readonly static string _b30Path = @"D:\Segment\L5188027_02720060719_B30.TIF";
+        private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
+        private readonly static Project PROJECT = Project.Instance;
+
         static async Task Main(string[] args)
         {
-            var sw = Stopwatch.StartNew();
-            var task = Testing();
-            Console.WriteLine(sw.Elapsed);
-            await task;
-            Console.WriteLine(sw.Elapsed);
+            PROJECT.Load(new string[3]
+            {
+                _b40Path,
+                _b30Path,
+                _b20Path
+            });
+            PROJECT.Cut();
+            await PROJECT.CalculateVariantsWithStatsAsync();
+            PROJECT.ReclassToByteLog();
+            await PROJECT.FindMinimasAsync();
 
             Console.WriteLine("DONE");
         }
-
-
-        private static async Task<int> Testing()
-        {
-
-            TaskCreationOptions.LongRunning
-
-
-            TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
-
-            Parallel.For(0, 5, (i) =>
-            {
-                Thread.Sleep(1500);
-            });
-
-            tcs.SetResult(99);
-
-            return await tcs.Task;
-        }
-             
     }
 }
