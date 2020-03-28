@@ -1,16 +1,13 @@
 ﻿using MARGO.BL.Graph;
 using MARGO.BL.Img;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MARGO.BL
 {
-    // TODO add cancellation option to async methods
     public class Project
     {
         #region Services
@@ -29,13 +26,13 @@ namespace MARGO.BL
         public IEnumerable<RasterLayer> Layers => myOriginalLayers.Values
                                             .Concat(myCutedLayers.Values)
                                             .Concat(mySampleLayers.Values);
-        public Variants<int> RAW { get; private set; } // TODO eliminate visibility level
-        public Variants<byte> BYTES { get; private set; } // TODO eliminate at all
+        public Variants<int> RAW { get; private set; }
+        public Variants<byte> BYTES { get; private set; }
         public Variants<byte> LOGGED { get; private set; }
         public ReadOnlyMemory<byte> MINIMAS { get; private set; }
-        private IEnumerable<int> myMinimasIdxs;
+        private IEnumerable<int> myMinimasIdxs = Enumerable.Empty<int>();
 
-        private IEnumerable<IMST> mySegments;
+        private IEnumerable<IMST> mySegments = Enumerable.Empty<IMST>();
 
 
         private Project() { }
@@ -54,29 +51,19 @@ namespace MARGO.BL
             myCutedLayers = new Dictionary<string, RasterLayer>(myOriginalLayers.Count);
         }
 
-        public void Cut(int topLeftX = 1800, int topLeftY = 1600, int bottomRightX = 6300, int bottomRightY = 5800)
+        public async Task Save(Image image, string id) => await myIOService.Save(image, id).ConfigureAwait(false);
+
+        public void Cut(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string prefix)
         {
             foreach (var layer in myOriginalLayers.Values)
             {
-                var cl = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY);
-                myCutedLayers[cl.ID] = cl;
+                var clID = $"{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.Cut) : prefix)}_{layer.ID}";
+                myCutedLayers[clID] = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY, clID);
             }
         }
 
-        public void CalculateVariantsWithStats(byte range = 3)
-        {
-            var firstLayer = myCutedLayers.First().Value;
-            RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
-
-            var offsetValues = Offsets.CalculateOffsetsFor(firstLayer.Width, range);
-
-            foreach (var layer in myCutedLayers.Values)
-                myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues);
-
-            myProcessingFunctions.PopulateStats(RAW);
-        }
-
-        public async Task CalculateVariantsWithStatsAsync(byte range = 3)
+        public bool CanCalcVariants => myCutedLayers.Any();
+        public async Task CalculateVariantsWithStatsAsync(byte range)
         {
             var firstLayer = myCutedLayers.First().Value;
             RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
@@ -88,17 +75,20 @@ namespace MARGO.BL
                     foreach (var layer in myCutedLayers.Values)
                         myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues, start, length);
                 })
-                .ContinueWith((t) => myProcessingFunctions.PopulateStats(RAW), CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default)
-                .ConfigureAwait(false); ;
+                .ContinueWith((t) =>
+                {
+                    myProcessingFunctions.PopulateStats(RAW);
+
+                    myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Width, RAW.Height));
+                    myProcessingFunctions.PopulateStats(BYTES);
+
+                    myProcessingFunctions.ReclassToByteLog(RAW, LOGGED = new Variants<byte>(RAW.Width, RAW.Height));
+                    myProcessingFunctions.PopulateStats(LOGGED);
+                }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default)
+                .ConfigureAwait(false);
         }
 
-        public void ReclassToByte() => myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Width, RAW.Height));
-
-        public void ReclassToByteLog() => myProcessingFunctions.ReclassToByteLog(RAW, LOGGED = new Variants<byte>(RAW.Width, RAW.Height));
-
-        public async Task Save(Image image, string id) => await myIOService.Save(image, id).ConfigureAwait(false);
-
-        public async Task FindMinimasAsync(byte range = 3)
+        public async Task FindMinimasAsync(byte range)
         {
             var offsetValues = Offsets.CalculateOffsetsFor(LOGGED.Width, range);
 
@@ -123,6 +113,7 @@ namespace MARGO.BL
             MINIMAS = minimas;
         }
 
+        public bool CanFlood => myMinimasIdxs.Any();
         public async Task FloodAsync()
         {
             int minimaCount = myMinimasIdxs.Count();
@@ -154,7 +145,7 @@ namespace MARGO.BL
             }
         }
 
-        public async Task CreateSampleLayersAsync(SampleType smapleType = SampleType.Mean, string id = null)
+        public async Task CreateSampleLayersAsync(SampleType smapleType, string prefix)
         {
             int segmentsCount = mySegments.Count();
 
@@ -167,7 +158,7 @@ namespace MARGO.BL
                                         ).ConfigureAwait(false);
 
 
-                var resultLayerID = id is null ? $"{sourceLayer.ID}_{nameof(myProcessingFunctions.CreateSampleLayer)}" : id;
+                var resultLayerID = $"{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.CreateSampleLayer) : prefix)}_{sourceLayer.ID}";
                 mySampleLayers[resultLayerID] = new RasterLayer(resultLayerID, targetMemory, sourceLayer.Width, sourceLayer.Height);
             }
         }

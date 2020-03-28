@@ -1,16 +1,15 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using MARGO.BL.Graph;
+﻿using MARGO.BL.Graph;
 using MARGO.BL.Segment;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MARGO.BL.Img
 {
     public interface IProcessingFunctions
     {
-        RasterLayer Cut(RasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id = null);
-        void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues); // , double weight
-        void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length);
+        RasterLayer Cut(RasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id);
+        void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length); // , double weight
         void PopulateStats<T>(Variants<T> variants) where T : struct;
         void ReclassToByte(Variants<int> source, Variants<byte> destination);
         void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
@@ -21,14 +20,13 @@ namespace MARGO.BL.Img
 
     internal class ProcessingFunctions : IProcessingFunctions
     {
-        public RasterLayer Cut(RasterLayer raster, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string id = null)
+        public RasterLayer Cut(RasterLayer raster, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string id)
         {
             int dx = bottomRightX - topLeftX;
             int dy = bottomRightY - topLeftY;
             int newLength = dx * dy;
 
-            var buffer = new byte[newLength];
-            var memory = new Memory<byte>(buffer);
+            var memory = new Memory<byte>(new byte[newLength]);
             var target = memory.Span;
 
             int i = 0;
@@ -37,20 +35,15 @@ namespace MARGO.BL.Img
             for (int y = 0; y < dy; y++)
             {
                 for (int x = 0; x < dx; x++)
-                {
                     target[i++] = source[rowStartPos + x];
-                }
 
                 rowStartPos += raster.Width;
             }
 
-            return new RasterLayer(id is null ? $"{raster.ID}_{nameof(Cut)}" : id, buffer, dx, dy);
+            return new RasterLayer(id is null ? $"{raster.ID}_{nameof(Cut)}" : id, memory, dx, dy);
         }
 
-        public void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues) // , double weight
-            => CalculateVariants(source, destination, offsetsValues, 0, source.Length);
-
-        public void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length)
+        public void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues, int start, int length) // , double weight
         {
             int srcLength = source.Length;
             int filterSize = offsetsValues.Length;

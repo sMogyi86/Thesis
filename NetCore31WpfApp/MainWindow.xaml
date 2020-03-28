@@ -34,9 +34,6 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -50,11 +47,11 @@
 
                         <StackPanel Grid.Row="1" Style="{StaticResource ContainerStackPanelStyle}">
                             <Label Content="Red" />
-                            <ComboBox ItemsSource="{Binding Chanels}" SelectedItem="{Binding Red}" />
+                            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Red}" />
                             <Label Content="Green" />
-                            <ComboBox ItemsSource="{Binding Chanels}" SelectedItem="{Binding Green}" />
+                            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Green}" />
                             <Label Content="Blue" />
-                            <ComboBox ItemsSource="{Binding Chanels}" SelectedItem="{Binding Blue}" />
+                            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Blue}" />
                             <Button
                                 Command="{Binding ComposeCommand}"
                                 Content="Compose"
@@ -81,47 +78,28 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="3">
-                            <TextBox Text="{Binding Range}" />
+                            <TextBox Text="{Binding VariantsRange}" />
                             <Button
-                                CommandParameter="{Binding Range}"
+                                CommandParameter="{Binding VariantsRange}"
                                 Command="{Binding VariantsCommand}"
                                 Content="Variants"
                                 Style="{StaticResource ButtonStyle}" />
                         </StackPanel>
 
+
                         <Button
                             Grid.Row="4"
-                            Command="{Binding AsBytesCommand}"
-                            Content="As bytes"
-                            Style="{StaticResource ButtonStyle}" />
-
-                        <Button
-                            Grid.Row="5"
-                            Command="{Binding LoggedBytesCommand}"
-                            Content="Logged bytes"
-                            Style="{StaticResource ButtonStyle}" />
-
-                        <Button
-                            Grid.Row="6"
+                            CommandParameter="{Binding MinimasRange}"
                             Command="{Binding MinimasCommand}"
                             Content="Minimas"
                             Style="{StaticResource ButtonStyle}" />
 
                         <Button
-                            Grid.Row="7"
+                            Grid.Row="5"
+                            CommandParameter="{Binding SampleType}"
                             Command="{Binding FloodCommand}"
                             Content="Flood"
                             Style="{StaticResource ButtonStyle}" />
-
-                        <StackPanel Grid.Row="8">
-                            <Button
-                                CommandParameter="{Binding SampleType}"
-                                Command="{Binding CreateSampleLayersCommand}"
-                                Content="CreateSampleLayers"
-                                Style="{StaticResource ButtonStyle}" />
-                        </StackPanel>
-
-
 
                     </Grid>
 

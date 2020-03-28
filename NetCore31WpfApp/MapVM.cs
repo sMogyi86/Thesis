@@ -1,7 +1,6 @@
 ﻿using MARGO.BL;
 using MARGO.BL.Img;
 using MARGO.MVVM;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
@@ -16,14 +15,17 @@ namespace MARGO
     {
         #region Services
         private readonly IImageFactory myImageFactory = Services.GetImageFactory();
+        private readonly MsgBox myUIServices = new MsgBox();
         #endregion
 
-        private readonly MsgBox myUIServices = new MsgBox();
+
 
         private Project Project => Project.Instance;
         public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
         public bool IsBusy { get; set; } = false;
 
+
+        public IEnumerable<RasterLayer> Layers => Project.Layers;
         public ICommand LoadCommand => new DelegateCommand(
             () =>
             {
@@ -32,11 +34,11 @@ namespace MARGO
                 if (ids.Any())
                 {
                     Project.Load(ids);
-                    this.RaisePropertyChanged(nameof(Chanels));
+                    this.RaisePropertyChanged(nameof(Layers));
                 }
             });
 
-        public IEnumerable<RasterLayer> Chanels => Project.Layers;
+
         public RasterLayer Red { get; set; }
         public RasterLayer Green { get; set; }
         public RasterLayer Blue { get; set; }
@@ -48,35 +50,72 @@ namespace MARGO
             },
             () => Red != null && Green != null && Blue != null);
 
+
         //public ICommand TopLeftCommand =>  new DelegateCommand(null, () => false);
         public Point TopLeftPoint { get; set; } = new Point(1800, 1600);
         //public ICommand BottomRightCommand => new DelegateCommand(null, () => false);
         public Point BottomRightPoint { get; set; } = new Point(6300, 5800);
-
-        public ICommand CutCommand => new DelegateCommand(
-            () =>
+        public string CutNamePrefix { get; set; }
+        public ICommand CutCommand => new DelegateCommand<string>(
+            (prefix) =>
             {
-                Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y);
+                Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y, prefix);
 
                 this.ChangeFreshMap();
-
-                this.RaisePropertyChanged(nameof(Chanels));
+                this.RaisePropertyChanged(nameof(Layers));
                 this.RaisePropertyChanged(nameof(VariantsCommand));
             },
-            () => Chanels.Any() && TopLeftPoint != Point.Empty && BottomRightPoint != Point.Empty);
+            _ => Layers.Any() && TopLeftPoint != Point.Empty && BottomRightPoint != Point.Empty);
 
-        public byte Range { get; set; } = 3;
+
+        public byte VariantsRange { get; set; } = 3;
         public ICommand VariantsCommand => new DelegateCommand<byte>(
             async range =>
             {
+                IsBusy = true;
                 await Project.CalculateVariantsWithStatsAsync(range);
+                IsBusy = false;
 
-                myUIServices.ShowInfo($"{nameof(Project.CalculateVariantsWithStatsAsync)} done.");
+                Maps.Add(myImageFactory.CreateImage(nameof(Project.BYTES), new ImageParts(Project.BYTES.Width, Project.BYTES.Height, Project.BYTES.Memory)));
+                CurrentMap = Maps.Last();
+                Maps.Add(myImageFactory.CreateImage(nameof(Project.LOGGED), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.LOGGED.Memory)));
 
-                this.RaisePropertyChanged(nameof(AsBytesCommand));
-                this.RaisePropertyChanged(nameof(LoggedBytesCommand));
+                this.RaisePropertyChanged(nameof(MinimasCommand));
             },
-            range => range > 1 && range % 2 == 1);
+            range => Project.CanCalcVariants && range > 1 && range % 2 == 1);
+
+
+        public byte MinimasRange { get; set; } = 3;
+        public ICommand MinimasCommand => new DelegateCommand<byte>(
+            async (range) =>
+            {
+                IsBusy = true;
+                await Project.FindMinimasAsync(range);
+                IsBusy = false;
+
+                Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
+                CurrentMap = Maps.Last();
+
+                this.RaisePropertyChanged(nameof(FloodCommand));
+            },
+            range => Project.LOGGED != null && range > 1 && range % 2 == 1);
+
+
+        public string FloodPrefix { get; set; } = "Flooded";
+        public SampleType SampleType { get; set; } = SampleType.Mean;
+        public ICommand FloodCommand => new DelegateCommand<SampleType>(
+            async (smapleType) =>
+            {
+                IsBusy = true;
+                await Project.FloodAsync();
+                await Project.CreateSampleLayersAsync(smapleType, FloodPrefix);
+                IsBusy = false;
+
+                this.ChangeFreshMap();
+                this.RaisePropertyChanged(nameof(Layers));
+            },
+            _ => Project.CanFlood);
+
 
         public ObservableCollection<Image> Maps { get; } = new ObservableCollection<Image>();
         private Image currentMap;
@@ -96,8 +135,6 @@ namespace MARGO
 
                     this.ImageSource = imageSource;
                 }
-
-                this.RaisePropertyChanged(nameof(SaveMapCommand));
             }
         }
         public ImageSource ImageSource { get; private set; }
@@ -115,57 +152,16 @@ namespace MARGO
             },
             img => img != null);
 
-        public ICommand AsBytesCommand => new DelegateCommand(
-            () =>
-            {
-                Project.ReclassToByte();
-                Maps.Add(myImageFactory.CreateImage(nameof(Project.BYTES), new ImageParts(Project.BYTES.Width, Project.BYTES.Height, Project.BYTES.Memory)));
-                CurrentMap = Maps.Last();
-            },
-            () => Project.RAW != null);
-        public ICommand LoggedBytesCommand => new DelegateCommand(
-            () =>
-            {
-                Project.ReclassToByteLog();
-                Maps.Add(myImageFactory.CreateImage(nameof(Project.LOGGED), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.LOGGED.Memory)));
-                CurrentMap = Maps.Last();
-            },
-            () => Project.RAW != null);
-
-        public ICommand MinimasCommand => new DelegateCommand(
-            async () =>
-            {
-                await Project.FindMinimasAsync();
-
-                Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
-                CurrentMap = Maps.Last();
-            });
-
-        public ICommand FloodCommand => new DelegateCommand(
-            async () =>
-            {
-                await Project.FloodAsync();
-            });
-
-        public SampleType SampleType { get; set; } = SampleType.Mean;
-        public ICommand CreateSampleLayersCommand => new DelegateCommand<SampleType>(
-           async (smapleType) =>
-           {
-               await Project.CreateSampleLayersAsync(smapleType);
-
-               this.ChangeFreshMap();
-
-               this.RaisePropertyChanged(nameof(Chanels));
-           });
-
         private void ChangeFreshMap()
         {
-            Red = Chanels.First(ch => ch.ID.StartsWith(Red.ID) && ch.ID != Red.ID);
-            Green = Chanels.First(ch => ch.ID.StartsWith(Green.ID) && ch.ID != Green.ID);
-            Blue = Chanels.First(ch => ch.ID.StartsWith(Blue.ID) && ch.ID != Blue.ID);
+            Red = Layers.First(ch => ch.ID.EndsWith(Red.ID) && ch.ID != Red.ID);
+            Green = Layers.First(ch => ch.ID.EndsWith(Green.ID) && ch.ID != Green.ID);
+            Blue = Layers.First(ch => ch.ID.EndsWith(Blue.ID) && ch.ID != Blue.ID);
 
             Maps.Add(myImageFactory.CreateImage($"{Red.ID}_{Green.ID}_{Blue.ID}", new ImageParts(Red.Width, Red.Height, Red.Memory, Green.Memory, Blue.Memory)));
             CurrentMap = Maps.Last();
+
+            this.RaisePropertyChanged(nameof(SaveMapCommand));
         }
     }
 }
