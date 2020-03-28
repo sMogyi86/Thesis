@@ -36,6 +36,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -82,8 +83,8 @@
                         <StackPanel Grid.Row="3">
                             <TextBox Text="{Binding Range}" />
                             <Button
-                                Command="{Binding VariantsCommand}"
                                 CommandParameter="{Binding Range}"
+                                Command="{Binding VariantsCommand}"
                                 Content="Variants"
                                 Style="{StaticResource ButtonStyle}" />
                         </StackPanel>
@@ -111,6 +112,16 @@
                             Command="{Binding FloodCommand}"
                             Content="Flood"
                             Style="{StaticResource ButtonStyle}" />
+
+                        <StackPanel Grid.Row="8">
+                            <Button
+                                CommandParameter="{Binding SampleType}"
+                                Command="{Binding CreateSampleLayersCommand}"
+                                Content="CreateSampleLayers"
+                                Style="{StaticResource ButtonStyle}" />
+                        </StackPanel>
+
+
 
                     </Grid>
 

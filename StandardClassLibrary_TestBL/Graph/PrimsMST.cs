@@ -7,28 +7,39 @@ namespace MARGO.BL.Graph
     public interface IMST
     {
         bool Terminated { get; }
-        int Value { get; }
-        INode Root { get; }
+        int SumValue { get; }
+        IEnumerable<int> Items { get; }
         void DoStep();
     }
 
     internal class PrimsMST : IMST
     {
-        private readonly List<(Edge Edge, Node Node)> myReachable = new List<(Edge Edge, Node Node)>();
+        private readonly List<int[]> myReachables = new List<int[]>();
+        private readonly List<int> myItems = new List<int>();
+        private readonly int[] myOffsets = new int[4];
+        private readonly ReadOnlyMemory<byte> myValueField;
         private readonly Func<int, bool> myBlockingTryTake; // for the optimistic concurrency
         private bool myCanStep = true;
-        private Node myLastCoupled;
+        private int myLastCoupledIdx;
 
 
         public bool Terminated => !myCanStep;
-        public int Value { get; private set; } = 0;
-        public INode Root { get; }
+        public int SumValue { get; private set; } = 0;
+        public IEnumerable<int> Items => myItems;
 
 
-        public PrimsMST(Node root, Func<int, bool> blockingTryTake)
+        public PrimsMST(int rootIdx, ReadOnlyMemory<byte> valueField, int dataWidth, Func<int, bool> blockingTryTake)
         {
-            Root = myLastCoupled = root;
+            myLastCoupledIdx = rootIdx;
+            myValueField = valueField;
             myBlockingTryTake = blockingTryTake;
+
+            myOffsets[0] = 1;
+            myOffsets[1] = dataWidth;
+            myOffsets[2] = -1;
+            myOffsets[3] = -dataWidth;
+
+            myItems.Add(myLastCoupledIdx);
         }
 
         public void DoStep()
@@ -54,47 +65,62 @@ namespace MARGO.BL.Graph
 
         void DiscoverReachables()
         {
-            foreach (var neigbourh in myLastCoupled.NeighboursInternal.Where(neigbourh => !neigbourh.Value.Taken))
-                myReachable.Add((neigbourh.Key, neigbourh.Value));
+            int[] Dist(int currentIdx, ReadOnlySpan<byte> values, int otherOffset)
+            {
+                int otherIdx = currentIdx + otherOffset;
+
+                if (otherIdx >= values.Length)
+                    otherIdx -= values.Length;
+
+                if (otherIdx < 0)
+                    otherIdx += values.Length;
+
+                int d = values[otherIdx] - values[currentIdx];
+                return new int[2] { (d < 0 ? -d : d), otherIdx };
+            }
+
+            var span = myValueField.Span;
+
+            foreach (var offset in myOffsets)
+                myReachables.Add(Dist(myLastCoupledIdx, span, offset));
         }
 
         void SortReachables()
-            => myReachable.Sort(
-                    (tpl1, tpl2) =>
-                        tpl1.Edge.Weight
-                        .CompareTo(tpl2.Edge.Weight)
+            => myReachables.Sort(
+                    (pairA, pairB) =>
+                        pairA[0]
+                        .CompareTo(pairB[0])
                 );
 
-        Node TryPickOne()
+        int TryPickOne()
         {
-            var picked = myReachable.First();
+            var picked = myReachables.First();
+            int pIdx = picked[1];
 
-            if (myBlockingTryTake(picked.Node.Index))
+            if (myBlockingTryTake == null || myBlockingTryTake(pIdx))
             {
-                myLastCoupled = picked.Node;
-                myLastCoupled.Taken = true;
-                var throughEdge = picked.Edge;
-                throughEdge.GetTheOtherNode(myLastCoupled).AddChild(myLastCoupled);
-                Value += throughEdge.Weight;
+                myLastCoupledIdx = pIdx;
+                myItems.Add(myLastCoupledIdx);
+                SumValue += picked[0];
             }
             else
             {
-                myLastCoupled = null;
+                myLastCoupledIdx = -1;
             }
 
-            return picked.Node;
+            return pIdx;
         }
 
-        private void CleanReachablesFrom(Node remove)
+        private void CleanReachablesFrom(int removeIdx)
         {
-            foreach (var tpl in myReachable.Where(tpl => tpl.Node == remove).ToList())
-                myReachable.Remove(tpl);
+            foreach (var pair in myReachables.Where(pair => pair[1] == removeIdx).ToList())
+                myReachables.Remove(pair);
         }
 
         private bool AnyReachable()
-            => myReachable.Any();
+            => myReachables.Any();
 
         private bool WasSuccessfulPick()
-            => myLastCoupled != null;
+            => myLastCoupledIdx != -1;
     }
 }

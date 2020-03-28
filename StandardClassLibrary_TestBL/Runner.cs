@@ -1,4 +1,5 @@
-﻿using System;
+﻿using System.Linq;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -21,6 +22,17 @@ namespace MARGO.BL
 
                 start += l;
             }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+        public async Task RunAsync<T>(IEnumerable<T> volume, Action<T> action)
+        {
+            var tasks = new Task[volume.Count()];
+
+            int i = 0;
+            foreach (var data in volume)
+                tasks[i++] = Task.Run(() => action(data));
 
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }

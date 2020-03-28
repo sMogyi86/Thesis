@@ -5,7 +5,7 @@ namespace MARGO.BL.Graph
 {
     internal sealed class FieldsSemaphore : IDisposable
     {
-        private readonly SemaphoreSlim mySemaphoreSlim = new SemaphoreSlim(0, 1);
+        private readonly SemaphoreSlim mySemaphoreSlim = new SemaphoreSlim(1);
         private readonly bool[] myNodesTaken;
 
 

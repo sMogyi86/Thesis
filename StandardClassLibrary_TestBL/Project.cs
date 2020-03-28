@@ -3,6 +3,7 @@ using MARGO.BL.Img;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,23 +15,27 @@ namespace MARGO.BL
     {
         #region Services
         private readonly IIOService myIOService = Services.GetIO();
-        private readonly IImageFunctions myProcessingFunctions = Services.GetProcessingFunctions();
-        private readonly GraphFuctions myGraphFuctions = new GraphFuctions();
+        private readonly IProcessingFunctions myProcessingFunctions = Services.GetProcessingFunctions();
         #endregion
 
         private readonly Runner myRunner = new Runner();
+        public byte LevelOfParallelism { get; set; } = (byte)Environment.ProcessorCount;
 
         public static Project Instance { get; } = new Project();
 
         private Dictionary<string, RasterLayer> myOriginalLayers = new Dictionary<string, RasterLayer>();
         private Dictionary<string, RasterLayer> myCutedLayers = new Dictionary<string, RasterLayer>();
-        public IEnumerable<RasterLayer> Layers => myOriginalLayers.Values.Concat(myCutedLayers.Values);
+        private Dictionary<string, RasterLayer> mySampleLayers = new Dictionary<string, RasterLayer>();
+        public IEnumerable<RasterLayer> Layers => myOriginalLayers.Values
+                                            .Concat(myCutedLayers.Values)
+                                            .Concat(mySampleLayers.Values);
         public Variants<int> RAW { get; private set; } // TODO eliminate visibility level
         public Variants<byte> BYTES { get; private set; } // TODO eliminate at all
         public Variants<byte> LOGGED { get; private set; }
-        public ReadOnlyMemory<byte> MINIMAS => myMinimas.Minimas;
-        private (ReadOnlyMemory<byte> Minimas, int Count) myMinimas;
+        public ReadOnlyMemory<byte> MINIMAS { get; private set; }
+        private IEnumerable<int> myMinimasIdxs;
 
+        private IEnumerable<IMST> mySegments;
 
 
         private Project() { }
@@ -56,7 +61,6 @@ namespace MARGO.BL
                 var cl = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY);
                 myCutedLayers[cl.ID] = cl;
             }
-
         }
 
         public void CalculateVariantsWithStats(byte range = 3)
@@ -78,9 +82,7 @@ namespace MARGO.BL
             RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
             var offsetValues = Offsets.CalculateOffsetsFor(firstLayer.Width, range);
 
-            int pc = Environment.ProcessorCount;
-
-            await myRunner.RunAsync(myCutedLayers.First().Value.Memory.Length, pc,
+            await myRunner.RunAsync(myCutedLayers.First().Value.Memory.Length, LevelOfParallelism,
                 (start, length) =>
                 {
                     foreach (var layer in myCutedLayers.Values)
@@ -96,60 +98,77 @@ namespace MARGO.BL
 
         public async Task Save(Image image, string id) => await myIOService.Save(image, id).ConfigureAwait(false);
 
-        public async Task FindMinimasAsync()
+        public async Task FindMinimasAsync(byte range = 3)
         {
-            byte range = 3;
-            var minimas = new byte[LOGGED.Memory.Length];
-
             var offsetValues = Offsets.CalculateOffsetsFor(LOGGED.Width, range);
 
-            int pc = Environment.ProcessorCount;
+            var resultMinimas = await myRunner.PerformAsync(LOGGED.Memory.Length, LevelOfParallelism,
+                                    (start, length) =>
+                                    {
+                                        var listMins = new List<int>();
+                                        myProcessingFunctions.FindMinimas(LOGGED.Memory, listMins, offsetValues, start, length);
+                                        return listMins;
+                                    }).ConfigureAwait(false);
 
-            await myRunner.RunAsync(LOGGED.Memory.Length, pc, (start, length) =>
-            {
-                foreach (var layer in myCutedLayers.Values)
-                    myProcessingFunctions.FindMinimas(LOGGED.Memory, minimas, offsetValues, start, length);
-            }).ConfigureAwait(false);
+            var minimaIds = new List<int>(resultMinimas.Select(lst => lst.Count).Sum());
+            foreach (var listMins in resultMinimas)
+                minimaIds.AddRange(listMins);
 
-            myMinimas = (Minimas: minimas, Count: minimas.Count(v => v == byte.MaxValue));
+            myMinimasIdxs = minimaIds;
+
+            var minimas = new byte[LOGGED.Memory.Length];
+            foreach (var idx in myMinimasIdxs)
+                minimas[idx] = byte.MaxValue;
+
+            MINIMAS = minimas;
         }
 
         public async Task FloodAsync()
         {
-            int pc = 1;// Environment.ProcessorCount;
-            var nodes = new Memory<Node>(new Node[LOGGED.Memory.Length]);
-            var seeds = new List<IMST>(myMinimas.Count);
+            int minimaCount = myMinimasIdxs.Count();
 
-            await myRunner.RunAsync(LOGGED.Memory.Length, pc,
-                (start, length) =>
-                {
-                    myGraphFuctions.CreateNodes(LOGGED.Memory, nodes, start, length);
-                }).ConfigureAwait(false);
-
-            await myRunner.RunAsync(nodes.Length, pc,
-                (start, length) =>
-                {
-                    myGraphFuctions.InitializeEdges(LOGGED.Width, nodes, start, length);
-                }).ConfigureAwait(false);
-
-            using (var semaphore = new FieldsSemaphore(nodes.Length))
+            using (var semaphore = new FieldsSemaphore(LevelOfParallelism == 1 ? 0 : LOGGED.Memory.Length))
             {
-                var sdsLst = await myRunner.PerformAsync(myMinimas.Count, pc,
-                                (start, length) =>
-                                {
-                                    var sds = new List<IMST>();
-                                    myGraphFuctions.CreateSeeds(semaphore.TryTake, nodes, myMinimas.Minimas, sds, start, length);
-                                    return sds;
-                                }).ConfigureAwait(false);
+                // Create seeds
+                var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
+                                        (start, length) =>
+                                        {
+                                            var listSeeds = new List<IMST>(length);
 
-                foreach (var lst in sdsLst)
-                    seeds.AddRange(lst);
+                                            foreach (var minIdx in myMinimasIdxs.Skip(start).Take(length))
+                                                listSeeds.Add(new PrimsMST(minIdx, LOGGED.Memory, LOGGED.Width, LevelOfParallelism == 1 ? (null as Func<int, bool>) : semaphore.TryTake));
 
-                await myRunner.RunAsync(nodes.Length, pc,
-                    (start, length) =>
-                    {
-                        myGraphFuctions.Flood(seeds.Skip(start).Take(length));
-                    }).ConfigureAwait(false);
+                                            return listSeeds;
+                                        }).ConfigureAwait(false);
+
+                // Flood
+                await myRunner.RunAsync(resultsSeeds,
+                                        listSeeds => myProcessingFunctions.Flood(listSeeds))
+                                        .ConfigureAwait(false);
+
+                var segments = new List<IMST>(minimaCount);
+                foreach (var lst in resultsSeeds)
+                    segments.AddRange(lst);
+
+                mySegments = segments;
+            }
+        }
+
+        public async Task CreateSampleLayersAsync(SampleType smapleType = SampleType.Mean, string id = null)
+        {
+            int segmentsCount = mySegments.Count();
+
+            foreach (var sourceLayer in myCutedLayers.Values)
+            {
+                var targetMemory = new Memory<byte>(new byte[sourceLayer.Memory.Length]);
+
+                await myRunner.RunAsync(segmentsCount, LevelOfParallelism,
+                                        (start, length) => myProcessingFunctions.CreateSampleLayer(mySegments.Skip(start).Take(length), sourceLayer.Memory, targetMemory, smapleType)
+                                        ).ConfigureAwait(false);
+
+
+                var resultLayerID = id is null ? $"{sourceLayer.ID}_{nameof(myProcessingFunctions.CreateSampleLayer)}" : id;
+                mySampleLayers[resultLayerID] = new RasterLayer(resultLayerID, targetMemory, sourceLayer.Width, sourceLayer.Height);
             }
         }
 

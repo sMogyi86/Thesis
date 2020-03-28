@@ -16,20 +16,20 @@ namespace SandBoxConsoleApp
         private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
         private readonly static Project PROJECT = Project.Instance;
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            PROJECT.Load(new string[3]
-            {
-                _b40Path,
-                _b30Path,
-                _b20Path
-            });
-            PROJECT.Cut();
-            await PROJECT.CalculateVariantsWithStatsAsync();
-            PROJECT.ReclassToByteLog();
-            await PROJECT.FindMinimasAsync();
+            //PROJECT.Load(new string[3]
+            //{
+            //    _b40Path,
+            //    _b30Path,
+            //    _b20Path
+            //});
+            //PROJECT.Cut();
+            //await PROJECT.CalculateVariantsWithStatsAsync();
+            //PROJECT.ReclassToByteLog();
+            //await PROJECT.FindMinimasAsync();
 
-            Console.WriteLine("DONE");
+            //Console.WriteLine("DONE");
         }
     }
 }

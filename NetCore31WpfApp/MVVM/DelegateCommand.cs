@@ -41,7 +41,7 @@ namespace MARGO.MVVM
             else
             {
                 if (this.isGeneric)
-                    return parameter != null && parameter is T;
+                    return parameter is T;
                 else
                     return true;
             }

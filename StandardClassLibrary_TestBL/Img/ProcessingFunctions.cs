@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using MARGO.BL.Graph;
+using MARGO.BL.Segment;
 
 namespace MARGO.BL.Img
 {
-    public interface IImageFunctions
+    public interface IProcessingFunctions
     {
         RasterLayer Cut(RasterLayer raster, int topLextX, int topLeftY, int bottomRightX, int bottomRightY, string id = null);
         void CalculateVariants(ReadOnlyMemory<byte> source, Memory<int> destination, ReadOnlyMemory<int> offsetsValues); // , double weight
@@ -12,10 +14,12 @@ namespace MARGO.BL.Img
         void PopulateStats<T>(Variants<T> variants) where T : struct;
         void ReclassToByte(Variants<int> source, Variants<byte> destination);
         void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
-        void FindMinimas(ReadOnlyMemory<byte> variants, Memory<byte> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length);
+        void FindMinimas(ReadOnlyMemory<byte> variants, ICollection<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length);
+        void Flood(IEnumerable<IMST> seeds);
+        void CreateSampleLayer(IEnumerable<IMST> segments, ReadOnlyMemory<byte> source, Memory<byte> target, SampleType smapleType);
     }
 
-    internal class ImageFunctions : IImageFunctions
+    internal class ProcessingFunctions : IProcessingFunctions
     {
         public RasterLayer Cut(RasterLayer raster, int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string id = null)
         {
@@ -140,23 +144,13 @@ namespace MARGO.BL.Img
             destination.Stats = bytesStats;
         }
 
-        // TODO only range = 3 for sure?
-        /// <summary>
-        /// <paramref name="offsetsValues"/> must be for range = 3!
-        /// </summary>
-        /// <param name="variants"></param>
-        /// <param name="minimas"></param>
-        /// <param name="offsetsValues"></param>
-        /// <param name="start"></param>
-        /// <param name="length"></param>
-        public void FindMinimas(ReadOnlyMemory<byte> variants, Memory<byte> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length)
+        public void FindMinimas(ReadOnlyMemory<byte> variants, ICollection<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length)
         {
             int srcLength = variants.Length;
             int filterSize = offsetsValues.Length;
 
             var offsets = offsetsValues.Span;
             var from = variants.Span;
-            var to = minimas.Span;
 
             for (int i = start; i < (start + length); i++)
             {
@@ -182,7 +176,32 @@ namespace MARGO.BL.Img
                 }
 
                 if (minIdx == i)
-                    to[i] = byte.MaxValue; // from[i]; // i;
+                    minimas.Add(minIdx);
+            }
+        }
+
+        public void Flood(IEnumerable<IMST> seeds)
+        {
+            do
+            {
+                foreach (var mst in seeds.Where(s => !s.Terminated))
+                {
+                    mst.DoStep();
+                }
+            } while (seeds.Any(s => !s.Terminated));
+        }
+
+        public void CreateSampleLayer(IEnumerable<IMST> segments, ReadOnlyMemory<byte> source, Memory<byte> target, SampleType smapleType)
+        {
+            var to = target.Span;
+
+            var stats = new SegmentStatsDecorator(source);
+            foreach (var segment in segments)
+            {
+                stats.Indexes = segment.Items;
+                byte sample = stats.GetSample(smapleType);
+                foreach (var idx in stats.Indexes)
+                    to[idx] = sample;
             }
         }
     }

@@ -1,6 +1,7 @@
 ﻿using MARGO.BL;
 using MARGO.BL.Img;
 using MARGO.MVVM;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
@@ -20,6 +21,8 @@ namespace MARGO
         private readonly MsgBox myUIServices = new MsgBox();
 
         private Project Project => Project.Instance;
+        public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
+        public bool IsBusy { get; set; } = false;
 
         public ICommand LoadCommand => new DelegateCommand(
             () =>
@@ -55,12 +58,7 @@ namespace MARGO
             {
                 Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y);
 
-                Red = Chanels.First(ch => ch.ID.StartsWith(Red.ID) && ch.ID != Red.ID);
-                Green = Chanels.First(ch => ch.ID.StartsWith(Green.ID) && ch.ID != Green.ID);
-                Blue = Chanels.First(ch => ch.ID.StartsWith(Blue.ID) && ch.ID != Blue.ID);
-
-                Maps.Add(myImageFactory.CreateImage($"{Red.ID}_{Green.ID}_{Blue.ID}", new ImageParts(Red.Width, Red.Height, Red.Memory, Green.Memory, Blue.Memory)));
-                CurrentMap = Maps.Last();
+                this.ChangeFreshMap();
 
                 this.RaisePropertyChanged(nameof(Chanels));
                 this.RaisePropertyChanged(nameof(VariantsCommand));
@@ -68,17 +66,17 @@ namespace MARGO
             () => Chanels.Any() && TopLeftPoint != Point.Empty && BottomRightPoint != Point.Empty);
 
         public byte Range { get; set; } = 3;
-        public ICommand VariantsCommand => new DelegateCommand<byte?>(
+        public ICommand VariantsCommand => new DelegateCommand<byte>(
             async range =>
             {
-                await Project.CalculateVariantsWithStatsAsync(range.Value);
+                await Project.CalculateVariantsWithStatsAsync(range);
 
                 myUIServices.ShowInfo($"{nameof(Project.CalculateVariantsWithStatsAsync)} done.");
 
                 this.RaisePropertyChanged(nameof(AsBytesCommand));
                 this.RaisePropertyChanged(nameof(LoggedBytesCommand));
             },
-            range => range.HasValue && range > 1 && range % 2 == 1);
+            range => range > 1 && range % 2 == 1);
 
         public ObservableCollection<Image> Maps { get; } = new ObservableCollection<Image>();
         private Image currentMap;
@@ -147,7 +145,27 @@ namespace MARGO
             async () =>
             {
                 await Project.FloodAsync();
-            }
-            );
+            });
+
+        public SampleType SampleType { get; set; } = SampleType.Mean;
+        public ICommand CreateSampleLayersCommand => new DelegateCommand<SampleType>(
+           async (smapleType) =>
+           {
+               await Project.CreateSampleLayersAsync(smapleType);
+
+               this.ChangeFreshMap();
+
+               this.RaisePropertyChanged(nameof(Chanels));
+           });
+
+        private void ChangeFreshMap()
+        {
+            Red = Chanels.First(ch => ch.ID.StartsWith(Red.ID) && ch.ID != Red.ID);
+            Green = Chanels.First(ch => ch.ID.StartsWith(Green.ID) && ch.ID != Green.ID);
+            Blue = Chanels.First(ch => ch.ID.StartsWith(Blue.ID) && ch.ID != Blue.ID);
+
+            Maps.Add(myImageFactory.CreateImage($"{Red.ID}_{Green.ID}_{Blue.ID}", new ImageParts(Red.Width, Red.Height, Red.Memory, Green.Memory, Blue.Memory)));
+            CurrentMap = Maps.Last();
+        }
     }
 }

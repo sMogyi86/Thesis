@@ -10,7 +10,7 @@ namespace MARGO.BL
         public static IImageFactory GetImageFactory()
             => new LibTiffImageFactory();
 
-        public static IImageFunctions GetProcessingFunctions()
-            => new ImageFunctions();
+        public static IProcessingFunctions GetProcessingFunctions()
+            => new ProcessingFunctions();
     }
 }
