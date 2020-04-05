@@ -9,7 +9,7 @@ namespace MARGO.BL
     {
         public async Task RunAsync(int volume, int sliceCount, Action<int, int> action)
         {
-            var lengths = this.Intervals(volume, sliceCount);
+            var lengths = this.Lengths(volume, sliceCount);
             var tasks = new Task[sliceCount];
 
             int start = 0;
@@ -26,20 +26,28 @@ namespace MARGO.BL
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
-        public async Task RunAsync<T>(IEnumerable<T> volume, Action<T> action)
+        public async Task ScheduleAsync<T>(IEnumerable<T> volume, int maxCount, Action<T> action)
         {
-            var tasks = new Task[volume.Count()];
-
+            int count = volume.Count();
             int i = 0;
-            foreach (var data in volume)
-                tasks[i++] = Task.Run(() => action(data));
+            do
+            {
+                var slice = volume.Skip(i * maxCount).Take(maxCount);
+                var tasks = new Task[slice.Count()];
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+                int j = 0;
+                foreach (var data in slice)
+                    tasks[j++] = Task.Run(() => action(data));
+
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+
+                i++;
+            } while ((count -= maxCount) > 0);
         }
 
         public async Task<T[]> PerformAsync<T>(int volume, int sliceCount, Func<int, int, T> func)
         {
-            var lengths = this.Intervals(volume, sliceCount);
+            var lengths = this.Lengths(volume, sliceCount);
             var tasks = new Task<T>[sliceCount];
 
             int start = 0;
@@ -56,34 +64,27 @@ namespace MARGO.BL
             return await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
-
-        private IEnumerable<int> Intervals(int num, int count)
+        /// <summary>
+        /// Calculates the most equal lengths for cutting the volume into the give number of pieces.
+        /// </summary>
+        /// <param name="fullLength">the full length of the volume</param>
+        /// <param name="pieceCount">the desired number of pieces</param>
+        /// <returns></returns>
+        private IEnumerable<int> Lengths(int fullLength, int pieceCount)
         {
-            int normalSize = num / count;
+            int normalSize = fullLength / pieceCount;
             int ext = normalSize + 1;
-            int remain = num % count;
+            int remain = fullLength % pieceCount;
 
-            var slices = new int[count];
+            var lengths = new int[pieceCount];
             int i = 0;
             for (int j = 0; j < remain; j++)
-                slices[i++] = ext;
+                lengths[i++] = ext;
 
-            for (int j = 0; j < (count - remain); j++)
-                slices[i++] = normalSize;
+            for (int j = 0; j < (pieceCount - remain); j++)
+                lengths[i++] = normalSize;
 
-            return slices;
+            return lengths;
         }
-
-        //private IReadOnlyDictionary<int, int> Slice(int num, int count)
-        //{
-        //    int nomalSize = num / count;
-        //    int remain = num % count;
-
-        //    return new Dictionary<int, int>(2)
-        //    {
-        //        { count-remain, nomalSize},
-        //        { remain, nomalSize+1}
-        //    };
-        //}
     }
 }

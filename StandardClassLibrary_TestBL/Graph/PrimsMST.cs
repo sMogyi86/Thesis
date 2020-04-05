@@ -14,9 +14,9 @@ namespace MARGO.BL.Graph
 
     internal class PrimsMST : IMST
     {
+        private static readonly int[] OFFSETS = new int[4];
         private readonly List<int[]> myReachables = new List<int[]>();
         private readonly List<int> myItems = new List<int>();
-        private readonly int[] myOffsets = new int[4];
         private readonly ReadOnlyMemory<byte> myValueField;
         private readonly Func<int, bool> myBlockingTryTake; // for the optimistic concurrency
         private bool myCanStep = true;
@@ -28,17 +28,28 @@ namespace MARGO.BL.Graph
         public IEnumerable<int> Items => myItems;
 
 
-        public PrimsMST(int rootIdx, ReadOnlyMemory<byte> valueField, int dataWidth, Func<int, bool> blockingTryTake)
+
+        private static bool INITIALIZED = false;
+        public static void Initalize(int dataWidth)
         {
+            if (!INITIALIZED)
+            {
+                OFFSETS[0] = 1;
+                OFFSETS[1] = dataWidth;
+                OFFSETS[2] = -1;
+                OFFSETS[3] = -dataWidth;
+                INITIALIZED = true;
+            }
+        }
+
+        public PrimsMST(int rootIdx, ReadOnlyMemory<byte> valueField, Func<int, bool> blockingTryTake)
+        {
+            if (!INITIALIZED)
+                throw new InvalidOperationException($"Call the static '{nameof(Initalize)}()' first!");
+
             myLastCoupledIdx = rootIdx;
             myValueField = valueField;
             myBlockingTryTake = blockingTryTake;
-
-            myOffsets[0] = 1;
-            myOffsets[1] = dataWidth;
-            myOffsets[2] = -1;
-            myOffsets[3] = -dataWidth;
-
             myItems.Add(myLastCoupledIdx);
         }
 
@@ -81,7 +92,7 @@ namespace MARGO.BL.Graph
 
             var span = myValueField.Span;
 
-            foreach (var offset in myOffsets)
+            foreach (var offset in OFFSETS)
                 myReachables.Add(Dist(myLastCoupledIdx, span, offset));
         }
 

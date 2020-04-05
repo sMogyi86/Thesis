@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace MARGO
+namespace MARGO.UIServices
 {
-    class MsgBox
+    internal class MsgBox
     {
         private string myLastPath =
 #if DEBUG

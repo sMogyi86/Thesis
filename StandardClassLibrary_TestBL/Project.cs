@@ -53,13 +53,14 @@ namespace MARGO.BL
 
         public async Task Save(Image image, string id) => await myIOService.Save(image, id).ConfigureAwait(false);
 
-        public void Cut(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string prefix)
+        public async Task Cut(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string prefix)
         {
-            foreach (var layer in myOriginalLayers.Values)
-            {
-                var clID = $"{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.Cut) : prefix)}_{layer.ID}";
-                myCutedLayers[clID] = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY, clID);
-            }
+            await myRunner.ScheduleAsync(myOriginalLayers.Values, LevelOfParallelism,
+                layer =>
+                {
+                    var clID = $"{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.Cut) : prefix)}_{layer.ID}";
+                    myCutedLayers[clID] = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY, clID);
+                }).ConfigureAwait(false);
         }
 
         public bool CanCalcVariants => myCutedLayers.Any();
@@ -120,6 +121,8 @@ namespace MARGO.BL
 
             using (var semaphore = new FieldsSemaphore(LevelOfParallelism == 1 ? 0 : LOGGED.Memory.Length))
             {
+                PrimsMST.Initalize(LOGGED.Width);
+
                 // Create seeds
                 var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
                                         (start, length) =>
@@ -127,13 +130,14 @@ namespace MARGO.BL
                                             var listSeeds = new List<IMST>(length);
 
                                             foreach (var minIdx in myMinimasIdxs.Skip(start).Take(length))
-                                                listSeeds.Add(new PrimsMST(minIdx, LOGGED.Memory, LOGGED.Width, LevelOfParallelism == 1 ? (null as Func<int, bool>) : semaphore.TryTake));
+                                                listSeeds.Add(new PrimsMST(minIdx, LOGGED.Memory, LevelOfParallelism == 1 ? (null as Func<int, bool>) : semaphore.TryTake));
 
                                             return listSeeds;
                                         }).ConfigureAwait(false);
 
                 // Flood
-                await myRunner.RunAsync(resultsSeeds,
+                await myRunner.ScheduleAsync(resultsSeeds,
+                                        LevelOfParallelism,
                                         listSeeds => myProcessingFunctions.Flood(listSeeds))
                                         .ConfigureAwait(false);
 

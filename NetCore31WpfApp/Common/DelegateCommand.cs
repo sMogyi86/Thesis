@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Windows.Input;
+using System.Windows.Threading;
 
-namespace MARGO.MVVM
+namespace MARGO.Common
 {
     public class DelegateCommand<T> : ICommand
     {
         #region Private fields
-        private readonly Action<T> action = null;
+        private readonly Dispatcher myDispatcher = Dispatcher.CurrentDispatcher;
+        private readonly Action<T> action;
         private readonly Predicate<T> predicate;
         private readonly bool isGeneric;
         #endregion
@@ -31,28 +33,43 @@ namespace MARGO.MVVM
 
         public bool CanExecute(object parameter)
         {
-            if (this.predicate != null)
+            try
             {
-                if (this.isGeneric)
-                    return this.predicate((T)parameter);
+                if (this.predicate != null)
+                {
+                    if (this.isGeneric)
+                        return this.predicate((T)parameter);
+                    else
+                        return this.predicate((T)new object());
+                }
                 else
-                    return this.predicate((T)new object());
+                {
+                    if (this.isGeneric)
+                        return parameter is T;
+                    else
+                        return true;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                if (this.isGeneric)
-                    return parameter is T;
-                else
-                    return true;
+                throw;
             }
         }
 
         public void Execute(object parameter)
         {
-            if (this.isGeneric)
-                this.action((T)parameter);
-            else
-                this.action((T)new object());
+            try
+            {
+                if (this.isGeneric)
+                    this.action((T)parameter);
+                else
+                    this.action((T)new object());
+            }
+            catch (Exception ex)
+            {
+
+                throw;
+            }
         }
     }
 

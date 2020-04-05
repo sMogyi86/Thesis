@@ -1,17 +1,21 @@
 ﻿using MARGO.BL;
 using MARGO.BL.Img;
-using MARGO.MVVM;
+using MARGO.Common;
+using MARGO.UIServices;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace MARGO
+namespace MARGO.ViewModels
 {
-    class MapVM : ObservableBase
+    class ViewModel : ObservableBase
     {
         #region Services
         private readonly IImageFactory myImageFactory = Services.GetImageFactory();
@@ -27,14 +31,19 @@ namespace MARGO
 
         public IEnumerable<RasterLayer> Layers => Project.Layers;
         public ICommand LoadCommand => new DelegateCommand(
-            () =>
+            async () =>
             {
                 var ids = myUIServices.GetLayerFiles();
 
                 if (ids.Any())
                 {
-                    Project.Load(ids);
+                    IsBusy = true;
+                    // https://stackoverflow.com/questions/54594297/wrapping-slow-synchronous-i-o-for-asynchronous-ui-consumption
+                    await Task.Run(() => { Project.Load(ids); });
+                    IsBusy = false;
+
                     this.RaisePropertyChanged(nameof(Layers));
+                    this.RaisePropertyChanged(nameof(CutCommand));
                 }
             });
 
@@ -57,9 +66,11 @@ namespace MARGO
         public Point BottomRightPoint { get; set; } = new Point(6300, 5800);
         public string CutNamePrefix { get; set; }
         public ICommand CutCommand => new DelegateCommand<string>(
-            (prefix) =>
+            async (prefix) =>
             {
-                Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y, prefix);
+                IsBusy = true;
+                await Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y, prefix);
+                IsBusy = false;
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
@@ -107,7 +118,10 @@ namespace MARGO
             async (smapleType) =>
             {
                 IsBusy = true;
+                var sw = Stopwatch.StartNew();
                 await Project.FloodAsync();
+                sw.Stop();
+                Console.WriteLine(sw.Elapsed);
                 await Project.CreateSampleLayersAsync(smapleType, FloodPrefix);
                 IsBusy = false;
 

@@ -1,0 +1,93 @@
+﻿<UserControl
+    x:Class="MARGO.Controls.ControlPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Grid.Column="0" Style="{StaticResource ContainerGridStyle}">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+
+
+        <Button
+            Grid.Row="0"
+            Command="{Binding LoadCommand}"
+            Content="Load"
+            Style="{StaticResource ButtonStyle}" />
+
+
+
+        <StackPanel Grid.Row="1" Style="{StaticResource ContainerStackPanelStyle}">
+            <Label Content="Red" />
+            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Red}" />
+            <Label Content="Green" />
+            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Green}" />
+            <Label Content="Blue" />
+            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Blue}" />
+            <Button
+                Command="{Binding ComposeCommand}"
+                Content="Compose"
+                Style="{StaticResource ButtonStyle}" />
+        </StackPanel>
+
+        <!--<Button
+            Grid.Row="2"
+            Command="{Binding AutoPlayCommand}"
+            Content="AutoPlay"
+            Style="{StaticResource ButtonStyle}" />-->
+
+        <StackPanel Grid.Row="2" Style="{StaticResource ContainerStackPanelStyle}">
+            <!--<Button
+                                Command="{Binding TopLeftCommand}"
+                                Content="TopLeft"
+                                Style="{StaticResource ButtonStyle}" />-->
+            <TextBox Text="{Binding TopLeftPoint}" />
+
+            <!--<Button
+                                Command="{Binding BottomRightCommand}"
+                                Content="BottomRight"
+                                Style="{StaticResource ButtonStyle}" />-->
+            <TextBox Text="{Binding BottomRightPoint}" />
+
+            <Button
+                Command="{Binding CutCommand}"
+                Content="Cut"
+                Style="{StaticResource ButtonStyle}" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3">
+            <TextBox Text="{Binding VariantsRange}" />
+            <Button
+                CommandParameter="{Binding VariantsRange}"
+                Command="{Binding VariantsCommand}"
+                Content="Variants"
+                Style="{StaticResource ButtonStyle}" />
+        </StackPanel>
+
+
+        <Button
+            Grid.Row="4"
+            CommandParameter="{Binding MinimasRange}"
+            Command="{Binding MinimasCommand}"
+            Content="Minimas"
+            Style="{StaticResource ButtonStyle}" />
+
+        <Button
+            Grid.Row="5"
+            CommandParameter="{Binding SampleType}"
+            Command="{Binding FloodCommand}"
+            Content="Flood"
+            Style="{StaticResource ButtonStyle}" />
+
+
+    </Grid>
+
+</UserControl>

@@ -1,6 +1,7 @@
 ﻿using MARGO.BL;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -30,6 +31,15 @@ namespace SandBoxConsoleApp
             //await PROJECT.FindMinimasAsync();
 
             //Console.WriteLine("DONE");
+
+            IEnumerable<int> ints = new int[3] {1, 2, 3 };
+
+            foreach (var item in ints.Take(100))
+            {
+                Console.WriteLine(item);
+            }
+
+            Console.ReadKey();
         }
     }
 }

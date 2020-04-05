@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Threading;
 
-namespace MARGO.MVVM
+namespace MARGO.ViewModels
 {
     public abstract class ObservableBase : INotifyPropertyChanged
     {

@@ -1,6 +1,5 @@
 ﻿using LiveCharts;
 using LiveCharts.Configurations;
-using MARGO.MVVM;
 using System.Windows;
 
 namespace MARGO
@@ -19,7 +18,7 @@ namespace MARGO
             Charting.For<Reclassed>(Mappers.Xy<Reclassed>().X(r => r.value).Y(r => r.count));
         }
 
-        private struct Reclassed
+        private struct Reclassed //~5B*width*height
         {
             public byte value;
             public int count;
