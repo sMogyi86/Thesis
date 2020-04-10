@@ -21,9 +21,9 @@
             <TabItem Header="Map">
                 <controls:MapView />
             </TabItem>
-            <!--<TabItem Header="Stats">
+            <TabItem Header="Stats">
                 <controls:StatisticsView />
-            </TabItem>-->
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

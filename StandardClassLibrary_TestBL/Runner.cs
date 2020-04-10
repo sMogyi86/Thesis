@@ -23,7 +23,8 @@ namespace MARGO.BL
                 start += l;
             }
 
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            await TryCatchAsync(Task.WhenAll(tasks)).ConfigureAwait(false);
+
         }
 
         public async Task ScheduleAsync<T>(IEnumerable<T> volume, int maxCount, Action<T> action)
@@ -39,7 +40,7 @@ namespace MARGO.BL
                 foreach (var data in slice)
                     tasks[j++] = Task.Run(() => action(data));
 
-                await Task.WhenAll(tasks).ConfigureAwait(false);
+                await TryCatchAsync(Task.WhenAll(tasks)).ConfigureAwait(false);
 
                 i++;
             } while ((count -= maxCount) > 0);
@@ -61,7 +62,7 @@ namespace MARGO.BL
                 start += l;
             }
 
-            return await Task.WhenAll(tasks).ConfigureAwait(false);
+            return await TryCatchAsyncT(Task.WhenAll(tasks)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -85,6 +86,30 @@ namespace MARGO.BL
                 lengths[i++] = normalSize;
 
             return lengths;
+        }
+
+        private async Task<T> TryCatchAsyncT<T>(Task<T> task)
+        {
+            try
+            {
+                return await task.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                throw task.Exception;
+            }
+        }
+
+        private async Task TryCatchAsync(Task task)
+        {
+            try
+            {
+                await task.ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                throw task.Exception;
+            }
         }
     }
 }

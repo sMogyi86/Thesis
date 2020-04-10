@@ -75,18 +75,18 @@ namespace MARGO.BL
                 {
                     foreach (var layer in myCutedLayers.Values)
                         myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues, start, length);
-                })
-                .ContinueWith((t) =>
-                {
-                    myProcessingFunctions.PopulateStats(RAW);
+                }).ConfigureAwait(false);
 
-                    myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Width, RAW.Height));
-                    myProcessingFunctions.PopulateStats(BYTES);
+            await Task.Run(() =>
+            {
+                myProcessingFunctions.PopulateStats(RAW);
 
-                    myProcessingFunctions.ReclassToByteLog(RAW, LOGGED = new Variants<byte>(RAW.Width, RAW.Height));
-                    myProcessingFunctions.PopulateStats(LOGGED);
-                }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default)
-                .ConfigureAwait(false);
+                myProcessingFunctions.ReclassToByte(RAW, BYTES = new Variants<byte>(RAW.Width, RAW.Height));
+                myProcessingFunctions.PopulateStats(BYTES);
+
+                myProcessingFunctions.ReclassToByteLog(RAW, LOGGED = new Variants<byte>(RAW.Width, RAW.Height));
+                myProcessingFunctions.PopulateStats(LOGGED);
+            }).ConfigureAwait(false);
         }
 
         public async Task FindMinimasAsync(byte range)

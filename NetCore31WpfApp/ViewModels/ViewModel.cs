@@ -30,7 +30,7 @@ namespace MARGO.ViewModels
 
 
         public IEnumerable<RasterLayer> Layers => Project.Layers;
-        public ICommand LoadCommand => new DelegateCommand(
+        public ICommand LoadCommand => new DelegateCommandAsync(
             async () =>
             {
                 var ids = myUIServices.GetLayerFiles();
@@ -65,7 +65,7 @@ namespace MARGO.ViewModels
         //public ICommand BottomRightCommand => new DelegateCommand(null, () => false);
         public Point BottomRightPoint { get; set; } = new Point(6300, 5800);
         public string CutNamePrefix { get; set; }
-        public ICommand CutCommand => new DelegateCommand<string>(
+        public ICommand CutCommand => new DelegateCommandAsync<string>(
             async (prefix) =>
             {
                 IsBusy = true;
@@ -80,7 +80,7 @@ namespace MARGO.ViewModels
 
 
         public byte VariantsRange { get; set; } = 3;
-        public ICommand VariantsCommand => new DelegateCommand<byte>(
+        public ICommand VariantsCommand => new DelegateCommandAsync<byte>(
             async range =>
             {
                 IsBusy = true;
@@ -97,7 +97,7 @@ namespace MARGO.ViewModels
 
 
         public byte MinimasRange { get; set; } = 3;
-        public ICommand MinimasCommand => new DelegateCommand<byte>(
+        public ICommand MinimasCommand => new DelegateCommandAsync<byte>(
             async (range) =>
             {
                 IsBusy = true;
@@ -114,14 +114,11 @@ namespace MARGO.ViewModels
 
         public string FloodPrefix { get; set; } = "Flooded";
         public SampleType SampleType { get; set; } = SampleType.Mean;
-        public ICommand FloodCommand => new DelegateCommand<SampleType>(
+        public ICommand FloodCommand => new DelegateCommandAsync<SampleType>(
             async (smapleType) =>
             {
                 IsBusy = true;
-                var sw = Stopwatch.StartNew();
                 await Project.FloodAsync();
-                sw.Stop();
-                Console.WriteLine(sw.Elapsed);
                 await Project.CreateSampleLayersAsync(smapleType, FloodPrefix);
                 IsBusy = false;
 
@@ -152,7 +149,7 @@ namespace MARGO.ViewModels
             }
         }
         public ImageSource ImageSource { get; private set; }
-        public ICommand SaveMapCommand => new DelegateCommand<Image>(
+        public ICommand SaveMapCommand => new DelegateCommandAsync<Image>(
             async image =>
             {
                 var savePath = myUIServices.GetSavePath();
