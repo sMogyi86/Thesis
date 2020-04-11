@@ -32,12 +32,9 @@ namespace SandBoxConsoleApp
 
             //Console.WriteLine("DONE");
 
-            IEnumerable<int> ints = new int[3] {1, 2, 3 };
+            TimeSpan timeSpan = TimeSpan.Zero;
 
-            foreach (var item in ints.Take(100))
-            {
-                Console.WriteLine(item);
-            }
+            Console.WriteLine(timeSpan.ToString());
 
             Console.ReadKey();
         }

@@ -1,9 +1,9 @@
 ﻿using MARGO.BL.Graph;
 using MARGO.BL.Img;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace MARGO.BL
@@ -20,9 +20,9 @@ namespace MARGO.BL
 
         public static Project Instance { get; } = new Project();
 
-        private Dictionary<string, RasterLayer> myOriginalLayers = new Dictionary<string, RasterLayer>();
-        private Dictionary<string, RasterLayer> myCutedLayers = new Dictionary<string, RasterLayer>();
-        private Dictionary<string, RasterLayer> mySampleLayers = new Dictionary<string, RasterLayer>();
+        private IDictionary<string, RasterLayer> myOriginalLayers = new Dictionary<string, RasterLayer>();
+        private IDictionary<string, RasterLayer> myCutedLayers = new ConcurrentDictionary<string, RasterLayer>();
+        private IDictionary<string, RasterLayer> mySampleLayers = new Dictionary<string, RasterLayer>();
         public IEnumerable<RasterLayer> Layers => myOriginalLayers.Values
                                             .Concat(myCutedLayers.Values)
                                             .Concat(mySampleLayers.Values);
@@ -105,6 +105,7 @@ namespace MARGO.BL
             foreach (var listMins in resultMinimas)
                 minimaIds.AddRange(listMins);
 
+            minimaIds.Sort();
             myMinimasIdxs = minimaIds;
 
             var minimas = new byte[LOGGED.Memory.Length];
@@ -119,34 +120,37 @@ namespace MARGO.BL
         {
             int minimaCount = myMinimasIdxs.Count();
 
-            using (var semaphore = new FieldsSemaphore(LevelOfParallelism == 1 ? 0 : LOGGED.Memory.Length))
-            {
-                PrimsMST.Initalize(LOGGED.Width);
+            FieldsSemaphore semaphore = null;
+            if (LevelOfParallelism > 1)
+                semaphore = new FieldsSemaphore(LOGGED.Memory.Length);
 
-                // Create seeds
-                var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
-                                        (start, length) =>
-                                        {
-                                            var listSeeds = new List<IMST>(length);
+            PrimsMST.Initalize(LOGGED.Width, semaphore);
 
-                                            foreach (var minIdx in myMinimasIdxs.Skip(start).Take(length))
-                                                listSeeds.Add(new PrimsMST(minIdx, LOGGED.Memory, LevelOfParallelism == 1 ? (null as Func<int, bool>) : semaphore.TryTake));
+            // Create seeds
+            var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
+                                    (start, length) =>
+                                    {
+                                        var listSeeds = new List<IMST>(length);
 
-                                            return listSeeds;
-                                        }).ConfigureAwait(false);
+                                        foreach (var minIdx in myMinimasIdxs.Skip(start).Take(length))
+                                            listSeeds.Add(new PrimsMST(minIdx, LOGGED.Memory));
 
-                // Flood
-                await myRunner.ScheduleAsync(resultsSeeds,
-                                        LevelOfParallelism,
-                                        listSeeds => myProcessingFunctions.Flood(listSeeds))
-                                        .ConfigureAwait(false);
+                                        return listSeeds;
+                                    }).ConfigureAwait(false);
 
-                var segments = new List<IMST>(minimaCount);
-                foreach (var lst in resultsSeeds)
-                    segments.AddRange(lst);
+            // Flood
+            await myRunner.ScheduleAsync(resultsSeeds,
+                                    LevelOfParallelism,
+                                    listSeeds => myProcessingFunctions.Flood(listSeeds))
+                                    .ConfigureAwait(false);
 
-                mySegments = segments;
-            }
+            semaphore?.Dispose();
+
+            var segments = new List<IMST>(minimaCount);
+            foreach (var lst in resultsSeeds)
+                segments.AddRange(lst);
+
+            mySegments = segments;
         }
 
         public async Task CreateSampleLayersAsync(SampleType smapleType, string prefix)

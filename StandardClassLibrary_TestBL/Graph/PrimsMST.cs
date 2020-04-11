@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace MARGO.BL.Graph
 {
@@ -14,11 +15,9 @@ namespace MARGO.BL.Graph
 
     internal class PrimsMST : IMST
     {
-        private static readonly int[] OFFSETS = new int[4];
         private readonly List<int[]> myReachables = new List<int[]>();
         private readonly List<int> myItems = new List<int>();
         private readonly ReadOnlyMemory<byte> myValueField;
-        private readonly Func<int, bool> myBlockingTryTake; // for the optimistic concurrency
         private bool myCanStep = true;
         private int myLastCoupledIdx;
 
@@ -29,8 +28,10 @@ namespace MARGO.BL.Graph
 
 
 
+        private static readonly int[] OFFSETS = new int[4];
+        private static FieldsSemaphore FIELDSEMAPHORE;
         private static bool INITIALIZED = false;
-        public static void Initalize(int dataWidth)
+        public static void Initalize(int dataWidth, FieldsSemaphore fieldsSemaphore)
         {
             if (!INITIALIZED)
             {
@@ -38,20 +39,24 @@ namespace MARGO.BL.Graph
                 OFFSETS[1] = dataWidth;
                 OFFSETS[2] = -1;
                 OFFSETS[3] = -dataWidth;
+
+                FIELDSEMAPHORE = fieldsSemaphore;
+
                 INITIALIZED = true;
             }
         }
 
-        public PrimsMST(int rootIdx, ReadOnlyMemory<byte> valueField, Func<int, bool> blockingTryTake)
+        public PrimsMST(int rootIdx, ReadOnlyMemory<byte> valueField)
         {
             if (!INITIALIZED)
                 throw new InvalidOperationException($"Call the static '{nameof(Initalize)}()' first!");
 
             myLastCoupledIdx = rootIdx;
             myValueField = valueField;
-            myBlockingTryTake = blockingTryTake;
             myItems.Add(myLastCoupledIdx);
         }
+
+
 
         public void DoStep()
         {
@@ -74,7 +79,8 @@ namespace MARGO.BL.Graph
 
 
 
-        void DiscoverReachables()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void DiscoverReachables()
         {
             int[] Dist(int currentIdx, ReadOnlySpan<byte> values, int otherOffset)
             {
@@ -96,19 +102,21 @@ namespace MARGO.BL.Graph
                 myReachables.Add(Dist(myLastCoupledIdx, span, offset));
         }
 
-        void SortReachables()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SortReachables()
             => myReachables.Sort(
                     (pairA, pairB) =>
                         pairA[0]
                         .CompareTo(pairB[0])
                 );
 
-        int TryPickOne()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int TryPickOne()
         {
             var picked = myReachables.First();
             int pIdx = picked[1];
 
-            if (myBlockingTryTake == null || myBlockingTryTake(pIdx))
+            if (FIELDSEMAPHORE == null || FIELDSEMAPHORE.TryTake(pIdx))
             {
                 myLastCoupledIdx = pIdx;
                 myItems.Add(myLastCoupledIdx);
@@ -122,15 +130,18 @@ namespace MARGO.BL.Graph
             return pIdx;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CleanReachablesFrom(int removeIdx)
         {
             foreach (var pair in myReachables.Where(pair => pair[1] == removeIdx).ToList())
                 myReachables.Remove(pair);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool AnyReachable()
             => myReachables.Any();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool WasSuccessfulPick()
             => myLastCoupledIdx != -1;
     }

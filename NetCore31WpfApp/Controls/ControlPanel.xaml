@@ -1,7 +1,20 @@
 ﻿<UserControl
     x:Class="MARGO.Controls.ControlPanel"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+    xmlns:img="clr-namespace:MARGO.BL.Img;assembly=MARGO.BL">
+
+    <UserControl.Resources>
+        <ObjectDataProvider
+            x:Key="sampleTypes"
+            MethodName="GetValues"
+            ObjectType="{x:Type img:SampleType}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="img:SampleType" />
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
 
     <Grid Grid.Column="0" Style="{StaticResource ContainerGridStyle}">
 
@@ -12,82 +25,196 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <GroupBox Grid.Row="0">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Button
+                        Command="{Binding LoadCommand}"
+                        Content="Load&gt;&gt;"
+                        Style="{StaticResource ButtonStyle}" />
+                    <TextBlock Text="{Binding LoadTime}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Label Content="Párhúzamos szálak" />
+                    <TextBox Text="{Binding LevelOfParallelism}" />
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
 
+        <GroupBox Grid.Row="1">
+            <StackPanel>
+                <Label Content="Red" />
+                <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Red}" />
+                <Label Content="Green" />
+                <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Green}" />
+                <Label Content="Blue" />
+                <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Blue}" />
+                <StackPanel Orientation="Horizontal">
+                    <Button
+                        Command="{Binding ComposeCommand}"
+                        Content="Compose&gt;&gt;"
+                        Style="{StaticResource ButtonStyle}" />
+                    <TextBlock Text="{Binding ComposeTime}" />
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
 
-        <Button
-            Grid.Row="0"
-            Command="{Binding LoadCommand}"
-            Content="Load"
-            Style="{StaticResource ButtonStyle}" />
+        <!--<GroupBox Grid.Row="2">
+            <StackPanel>
+                <Button
+                    Command="{Binding AutoPlayCommand}"
+                    Content="AutoPlay"
+                    Style="{StaticResource ButtonStyle}" />
+                <TextBlock Text="{Binding AutoPlayTime}" />
+            </StackPanel>
+        </GroupBox>-->
 
-
-
-        <StackPanel Grid.Row="1" Style="{StaticResource ContainerStackPanelStyle}">
-            <Label Content="Red" />
-            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Red}" />
-            <Label Content="Green" />
-            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Green}" />
-            <Label Content="Blue" />
-            <ComboBox ItemsSource="{Binding Layers}" SelectedItem="{Binding Blue}" />
-            <Button
-                Command="{Binding ComposeCommand}"
-                Content="Compose"
-                Style="{StaticResource ButtonStyle}" />
-        </StackPanel>
-
-        <!--<Button
-            Grid.Row="2"
-            Command="{Binding AutoPlayCommand}"
-            Content="AutoPlay"
-            Style="{StaticResource ButtonStyle}" />-->
-
-        <StackPanel Grid.Row="2" Style="{StaticResource ContainerStackPanelStyle}">
-            <!--<Button
+        <GroupBox Grid.Row="3">
+            <StackPanel>
+                <!--<Button
                                 Command="{Binding TopLeftCommand}"
                                 Content="TopLeft"
                                 Style="{StaticResource ButtonStyle}" />-->
-            <TextBox Text="{Binding TopLeftPoint}" />
+                <TextBox Text="{Binding TopLeftPoint}" />
 
-            <!--<Button
+                <!--<Button
                                 Command="{Binding BottomRightCommand}"
                                 Content="BottomRight"
                                 Style="{StaticResource ButtonStyle}" />-->
-            <TextBox Text="{Binding BottomRightPoint}" />
+                <TextBox Text="{Binding BottomRightPoint}" />
+                <StackPanel Orientation="Horizontal">
+                    <Button
+                        Command="{Binding CutCommand}"
+                        Content="Cut&gt;&gt;"
+                        Style="{StaticResource ButtonStyle}" />
+                    <TextBlock Text="{Binding CutTime}" />
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
 
-            <Button
-                Command="{Binding CutCommand}"
-                Content="Cut"
-                Style="{StaticResource ButtonStyle}" />
-        </StackPanel>
+        <GroupBox Grid.Row="4">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Label
+                        Grid.Column="0"
+                        Content="VariantsRange"
+                        HorizontalAlignment="Right" />
+                    <TextBox
+                        Grid.Column="1"
+                        Text="{Binding VariantsRange}"
+                        HorizontalAlignment="Stretch" />
+                </Grid>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        Grid.Column="0"
+                        CommandParameter="{Binding VariantsRange}"
+                        Command="{Binding VariantsCommand}"
+                        Content="Variants&gt;&gt;"
+                        Style="{StaticResource ButtonStyle}" />
+                    <TextBlock Grid.Column="1" Text="{Binding VariantsTime}" />
+                </Grid>
+            </Grid>
+        </GroupBox>
 
-        <StackPanel Grid.Row="3">
-            <TextBox Text="{Binding VariantsRange}" />
-            <Button
-                CommandParameter="{Binding VariantsRange}"
-                Command="{Binding VariantsCommand}"
-                Content="Variants"
-                Style="{StaticResource ButtonStyle}" />
-        </StackPanel>
 
+        <GroupBox Grid.Row="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Label
+                        Grid.Column="0"
+                        Content="MinimasRange"
+                        HorizontalAlignment="Right" />
+                    <TextBox Grid.Column="1" Text="{Binding MinimasRange}" />
+                </Grid>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        Grid.Column="0"
+                        CommandParameter="{Binding MinimasRange}"
+                        Command="{Binding MinimasCommand}"
+                        Content="Minimas&gt;&gt;"
+                        Style="{StaticResource ButtonStyle}" />
+                    <TextBlock Grid.Column="1" Text="{Binding MinimasTime}" />
+                </Grid>
+            </Grid>
+        </GroupBox>
 
-        <Button
-            Grid.Row="4"
-            CommandParameter="{Binding MinimasRange}"
-            Command="{Binding MinimasCommand}"
-            Content="Minimas"
-            Style="{StaticResource ButtonStyle}" />
+        <GroupBox Grid.Row="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Command="{Binding FloodCommand}"
+                    Content="Flood"
+                    Style="{StaticResource ButtonStyle}" />
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Text="{Binding FloodTime}" />
+                <Label
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Content="SampleType"
+                    HorizontalAlignment="Right" />
+                <ComboBox
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    ItemsSource="{Binding Source={StaticResource sampleTypes}}"
+                    SelectedItem="{Binding SampleType}" />
+                <Button
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    CommandParameter="{Binding SampleType}"
+                    Command="{Binding CreateSampleCommand}"
+                    Content="Compose"
+                    Style="{StaticResource ButtonStyle}" />
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Text="{Binding SampleTime}" />
+            </Grid>
+        </GroupBox>
 
-        <Button
-            Grid.Row="5"
-            CommandParameter="{Binding SampleType}"
-            Command="{Binding FloodCommand}"
-            Content="Flood"
-            Style="{StaticResource ButtonStyle}" />
+        <GroupBox Grid.Row="7" Height="50">
 
-
+        </GroupBox>
+        <!--<xctk:ColorPicker Name="ClrPcker_Background" />-->
     </Grid>
 
 </UserControl>

@@ -24,9 +24,11 @@ namespace MARGO.ViewModels
 
 
 
+        private readonly Stopwatch myStopwatch = new Stopwatch();
         private Project Project => Project.Instance;
-        public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
         public bool IsBusy { get; set; } = false;
+        public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
+
 
 
         public IEnumerable<RasterLayer> Layers => Project.Layers;
@@ -37,27 +39,34 @@ namespace MARGO.ViewModels
 
                 if (ids.Any())
                 {
-                    IsBusy = true;
+                    StartBusy();
                     // https://stackoverflow.com/questions/54594297/wrapping-slow-synchronous-i-o-for-asynchronous-ui-consumption
                     await Task.Run(() => { Project.Load(ids); });
-                    IsBusy = false;
+                    LoadTime = EndBusy();
 
                     this.RaisePropertyChanged(nameof(Layers));
                     this.RaisePropertyChanged(nameof(CutCommand));
                 }
             });
+        public string LoadTime { get; set; }
 
 
         public RasterLayer Red { get; set; }
         public RasterLayer Green { get; set; }
         public RasterLayer Blue { get; set; }
-        public ICommand ComposeCommand => new DelegateCommand(
-            () =>
+        public ICommand ComposeCommand => new DelegateCommandAsync(
+            async () =>
             {
-                Maps.Add(myImageFactory.CreateImage($"{Red.ID}_{Green.ID}_{Blue.ID}", new ImageParts(Red.Width, Red.Height, Red.Memory, Green.Memory, Blue.Memory)));
+                StartBusy();
+                var map = await Task.Run(() => myImageFactory.CreateImage($"{Red.ID}_{Green.ID}_{Blue.ID}", new ImageParts(Red.Width, Red.Height, Red.Memory, Green.Memory, Blue.Memory)));
+                ComposeTime = EndBusy();
+
+                Maps.Add(map);
+
                 CurrentMap = Maps.Last();
             },
             () => Red != null && Green != null && Blue != null);
+        public string ComposeTime { get; set; }
 
 
         //public ICommand TopLeftCommand =>  new DelegateCommand(null, () => false);
@@ -68,41 +77,43 @@ namespace MARGO.ViewModels
         public ICommand CutCommand => new DelegateCommandAsync<string>(
             async (prefix) =>
             {
-                IsBusy = true;
+                StartBusy();
                 await Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y, prefix);
-                IsBusy = false;
+                CutTime = EndBusy();
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
                 this.RaisePropertyChanged(nameof(VariantsCommand));
             },
             _ => Layers.Any() && TopLeftPoint != Point.Empty && BottomRightPoint != Point.Empty);
+        public string CutTime { get; set; }
 
 
         public byte VariantsRange { get; set; } = 3;
         public ICommand VariantsCommand => new DelegateCommandAsync<byte>(
             async range =>
             {
-                IsBusy = true;
+                StartBusy();
                 await Project.CalculateVariantsWithStatsAsync(range);
-                IsBusy = false;
+                VariantsTime = EndBusy();
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.BYTES), new ImageParts(Project.BYTES.Width, Project.BYTES.Height, Project.BYTES.Memory)));
-                CurrentMap = Maps.Last();
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.LOGGED), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.LOGGED.Memory)));
+                CurrentMap = Maps.Last();
 
                 this.RaisePropertyChanged(nameof(MinimasCommand));
             },
             range => Project.CanCalcVariants && range > 1 && range % 2 == 1);
+        public string VariantsTime { get; set; }
 
 
         public byte MinimasRange { get; set; } = 3;
         public ICommand MinimasCommand => new DelegateCommandAsync<byte>(
             async (range) =>
             {
-                IsBusy = true;
+                StartBusy();
                 await Project.FindMinimasAsync(range);
-                IsBusy = false;
+                MinimasTime = EndBusy();
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
                 CurrentMap = Maps.Last();
@@ -110,22 +121,32 @@ namespace MARGO.ViewModels
                 this.RaisePropertyChanged(nameof(FloodCommand));
             },
             range => Project.LOGGED != null && range > 1 && range % 2 == 1);
+        public string MinimasTime { get; set; }
 
 
-        public string FloodPrefix { get; set; } = "Flooded";
+        public ICommand FloodCommand => new DelegateCommandAsync(
+            async () =>
+            {
+                StartBusy();
+                await Project.FloodAsync();
+                FloodTime = EndBusy();
+            },
+            () => Project.CanFlood);
+        public string FloodTime { get; set; }
+
+
         public SampleType SampleType { get; set; } = SampleType.Mean;
-        public ICommand FloodCommand => new DelegateCommandAsync<SampleType>(
+        public ICommand CreateSampleCommand => new DelegateCommandAsync<SampleType>(
             async (smapleType) =>
             {
-                IsBusy = true;
-                await Project.FloodAsync();
-                await Project.CreateSampleLayersAsync(smapleType, FloodPrefix);
-                IsBusy = false;
+                StartBusy();
+                await Project.CreateSampleLayersAsync(smapleType, SampleType.ToString());
+                SampleTime =  FloodTime = EndBusy();
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
-            },
-            _ => Project.CanFlood);
+            });
+        public string  SampleTime { get; set; }
 
 
         public ObservableCollection<Image> Maps { get; } = new ObservableCollection<Image>();
@@ -173,6 +194,19 @@ namespace MARGO.ViewModels
             CurrentMap = Maps.Last();
 
             this.RaisePropertyChanged(nameof(SaveMapCommand));
+        }
+
+        private void StartBusy()
+        {
+            IsBusy = true;
+            myStopwatch.Start();
+        }
+
+        private string EndBusy()
+        {
+            myStopwatch.Stop();
+            IsBusy = false;
+            return myStopwatch.Elapsed.ToString(@"h\:mm\:ss\.fff");
         }
     }
 }

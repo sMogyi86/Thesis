@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace MARGO.BL.Graph
@@ -20,6 +21,8 @@ namespace MARGO.BL.Graph
         /// </summary>
         /// <param name="idx"></param>
         /// <returns></returns>
+        /// 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryTake(int idx)
         {
             mySemaphoreSlim.Wait();
