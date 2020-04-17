@@ -354,6 +354,7 @@
                 <Button
                     Grid.Row="5"
                     Grid.Column="0"
+                    CommandParameter="{Binding SampleType}"
                     Command="{Binding ClasifyCommand}"
                     Content="Clasify&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />

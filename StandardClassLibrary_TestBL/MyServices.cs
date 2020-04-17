@@ -2,7 +2,7 @@
 
 namespace MARGO.BL
 {
-    public static class Services
+    public static class MyServices
     {
         public static IIOService GetIO()
             => new TiffIO();

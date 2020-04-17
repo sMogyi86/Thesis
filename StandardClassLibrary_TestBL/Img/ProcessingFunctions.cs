@@ -191,9 +191,9 @@ namespace MARGO.BL.Img
             var stats = new SegmentStatsDecorator(source);
             foreach (var segment in segments)
             {
-                stats.Indexes = segment.Items;
+                stats.Segment = segment.Items;
                 byte sample = stats.GetSample(smapleType);
-                foreach (var idx in stats.Indexes)
+                foreach (var idx in stats.Segment)
                     to[idx] = sample;
             }
         }

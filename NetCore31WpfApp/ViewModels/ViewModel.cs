@@ -18,7 +18,7 @@ namespace MARGO.ViewModels
     class ViewModel : ObservableBase, IUIHelper
     {
         #region Services
-        private readonly IImageFactory myImageFactory = Services.GetImageFactory();
+        private readonly IImageFactory myImageFactory = MyServices.GetImageFactory();
         private readonly MsgBox myUIServices = new MsgBox();
         #endregion
 
@@ -42,12 +42,12 @@ namespace MARGO.ViewModels
                     StartBusy();
                     // https://stackoverflow.com/questions/54594297/wrapping-slow-synchronous-i-o-for-asynchronous-ui-consumption
                     await Task.Run(() => { Project.Load(ids); });
-                    LoadTime = EndBusy();
 
                     this.RaisePropertyChanged(nameof(Layers));
                     this.RaisePropertyChanged(nameof(CutCommand));
                 }
-            });
+            })
+        { Finaly = () => LoadTime = EndBusy() };
         public TimeSpan LoadTime { get; set; }
 
 
@@ -59,13 +59,13 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 var map = await Task.Run(() => myImageFactory.CreateImage($"{Red.ID}_{Green.ID}_{Blue.ID}", new ImageParts(Red.Width, Red.Height, Red.Memory, Green.Memory, Blue.Memory)));
-                ComposeTime = EndBusy();
 
                 Maps.Add(map);
 
                 CurrentMap = Maps.Last();
             },
-            () => Red != null && Green != null && Blue != null);
+            () => Red != null && Green != null && Blue != null)
+        { Finaly = () => ComposeTime = EndBusy() };
         public TimeSpan ComposeTime { get; set; }
 
 
@@ -83,13 +83,13 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.Cut((int)TopLeftPoint.Value.X, (int)TopLeftPoint.Value.Y, (int)BottomRightPoint.Value.X, (int)BottomRightPoint.Value.Y, prefix);
-                CutTime = EndBusy();
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
                 this.RaisePropertyChanged(nameof(VariantsCommand));
             },
-            _ => Layers.Any() && TopLeftPoint != null && BottomRightPoint != null);
+            _ => Layers.Any() && TopLeftPoint != null && BottomRightPoint != null)
+        { Finaly = () => CutTime = EndBusy() };
         public TimeSpan CutTime { get; set; }
 
 
@@ -99,7 +99,6 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.CalculateVariantsWithStatsAsync(range);
-                VariantsTime = EndBusy();
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.BYTES), new ImageParts(Project.BYTES.Width, Project.BYTES.Height, Project.BYTES.Memory)));
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.LOGGED), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.LOGGED.Memory)));
@@ -107,7 +106,8 @@ namespace MARGO.ViewModels
 
                 this.RaisePropertyChanged(nameof(MinimasCommand));
             },
-            range => Project.CanCalcVariants && range > 1 && range % 2 == 1);
+            range => Project.CanCalcVariants && range > 1 && range % 2 == 1)
+        { Finaly = () => VariantsTime = EndBusy() };
         public TimeSpan VariantsTime { get; set; }
 
 
@@ -117,14 +117,14 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.FindMinimasAsync(range);
-                MinimasTime = EndBusy();
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
                 CurrentMap = Maps.Last();
 
                 this.RaisePropertyChanged(nameof(FloodCommand));
             },
-            range => Project.LOGGED != null && range > 1 && range % 2 == 1);
+            range => Project.LOGGED != null && range > 1 && range % 2 == 1)
+        { Finaly = () => MinimasTime = EndBusy() };
         public TimeSpan MinimasTime { get; set; }
         public string MinimasCount { get; set; } = "TODO";
 
@@ -134,9 +134,9 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.FloodAsync();
-                FloodTime = EndBusy();
             },
-            () => Project.CanFlood);
+            () => Project.CanFlood)
+        { Finaly = () => FloodTime = EndBusy() };
         public TimeSpan FloodTime { get; set; }
 
 
@@ -146,11 +146,11 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.CreateSampleLayersAsync(smapleType, SampleType.ToString());
-                SampleTime = FloodTime = EndBusy();
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
-            });
+            })
+        { Finaly = () => SampleTime = FloodTime = EndBusy() };
         public TimeSpan SampleTime { get; set; }
 
 
@@ -257,14 +257,14 @@ namespace MARGO.ViewModels
                     grp.AddPoint(p);
                     this.RaisePropertyChanged(nameof(ClasifyCommand));
                 }, grp => grp != null);
-        public ICommand ClasifyCommand => new DelegateCommandAsync(
-            async () =>
+        public ICommand ClasifyCommand => new DelegateCommandAsync<SampleType>(
+            async sType =>
             {
                 StartBusy();
-                await Project.ClasifyAsync(Groups);
-                ClasifyTime = EndBusy();
+                await Project.ClasifyAsync(sType, Groups);
             },
-            () => Groups.Any());
+            _ => Groups.Any())
+        { Finaly = () => ClasifyTime = EndBusy() };
         public TimeSpan ClasifyTime { get; set; }
 
 

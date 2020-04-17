@@ -82,7 +82,7 @@ namespace MARGO.BL.Graph
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DiscoverReachables()
         {
-            int[] Dist(int currentIdx, ReadOnlySpan<byte> values, int otherOffset)
+            static int[] Dist(int currentIdx, ReadOnlySpan<byte> values, int otherOffset)
             {
                 int otherIdx = currentIdx + otherOffset;
 

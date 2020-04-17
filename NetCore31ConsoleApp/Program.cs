@@ -1,4 +1,6 @@
-﻿using MARGO.BL;
+﻿using System.Runtime.Intrinsics.X86;
+using System.Numerics;
+using MARGO.BL;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -19,33 +21,59 @@ namespace SandBoxConsoleApp
 
         static async Task Main(string[] args)
         {
-            var pc = Environment.ProcessorCount;
-            Console.WriteLine(pc);
+            Testing();
 
-            var tasks = new Task[pc];
-
-            Random rnd = new Random();
-            for (int i = 0; i < pc; i++)
-            {
-                int num = rnd.Next(0, pc/2);
-
-                tasks[i] = Task.Run(() => StringLockTest(num));
-            }
-            await Task.WhenAll(tasks);
-
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
-        private static void StringLockTest(int num)
+        private static void Testing()
         {
-            var thread = Thread.CurrentThread;                
-            Console.WriteLine($"{thread.ManagedThreadId} ENTERS [{num}]");
-            lock (num.ToString())
+            //bool isHardwareAccelerated = Vector.IsHardwareAccelerated;
+            //Console.WriteLine(isHardwareAccelerated);
+            //Console.WriteLine(Vector<byte>.Count);
+
+            //Console.WriteLine(Aes.IsSupported);
+            //Console.WriteLine(Avx.IsSupported);
+            ////Console.WriteLine(Avx2.IsSupported);
+            ////Console.WriteLine(Bmi1.IsSupported);
+            ////Console.WriteLine(Bmi2.IsSupported);
+            ////Console.WriteLine(Fma.IsSupported);
+            ////Console.WriteLine(Lzcnt.IsSupported);
+            //Console.WriteLine(Pclmulqdq.IsSupported);
+            //Console.WriteLine(Popcnt.IsSupported);
+            //Console.WriteLine(Sse.IsSupported);
+            //Console.WriteLine(Sse2.IsSupported);
+            //Console.WriteLine(Sse3.IsSupported);
+            //Console.WriteLine(Sse41.IsSupported);
+            //Console.WriteLine(Sse42.IsSupported);
+            //Console.WriteLine(Ssse3.IsSupported);
+
+
+
+            int byteVectorCount = Vector<byte>.Count;
+            int shortVectorcount = Vector<short>.Count;
+            int ushortVectorCount = Vector<ushort>.Count;
+            
+            short[] a = new short[shortVectorcount];
+            short[] b = new short[shortVectorcount];
+            for (int i = 0; i < 3; i++)
             {
-                Thread.Sleep(250);
-                Console.WriteLine($"{thread.ManagedThreadId} EXECUTES  [{num}]");
+                a[i] = 0;
             }
-            Console.WriteLine($"{thread.ManagedThreadId} EXITS  [{num}]");
+
+            b[0] = 8;
+            b[1] = 8;
+            b[2] = 31;
+
+            var av = new Vector<short>(a);
+            Console.WriteLine(av);
+            var bv = new Vector<short>(b);
+            Console.WriteLine(bv);
+
+
+            var delta = Vector.AsVectorUInt16(Vector.Subtract(av, bv));
+            double distance = Math.Sqrt(Vector.Dot(Vector.Multiply(delta, delta), Vector<ushort>.One));
+            Console.WriteLine(distance);
         }
     }
 }

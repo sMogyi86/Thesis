@@ -8,6 +8,7 @@ namespace MARGO.Common
     public interface IDelegateCommand : ICommand
     {
         IExceptionHandler ExceptionHandler { get; set; }
+        Action Finaly { get; set; }
         //ILoggerImplementation Logger { get; set; }
         //Action CancelAction { get; set; }
         //void RaiseCanExecuteChanged(Dispatcher dispatcher = null, bool asynchronously = false);
@@ -27,6 +28,8 @@ namespace MARGO.Common
         public event EventHandler CanExecuteChanged;
 
         public IExceptionHandler ExceptionHandler { get; set; } = new ExceptionHandler();
+        public Action Finaly { get; set; }
+
 
         #region Constructors
         public DelegateCommand(Action<T> action, Predicate<T> predicate = null)
@@ -87,6 +90,7 @@ namespace MARGO.Common
             {
                 ExceptionHandler?.Handle(ex);
             }
+            finally { Finaly?.Invoke(); }
 
             return canExecute;
         }
@@ -135,6 +139,7 @@ namespace MARGO.Common
                 else
                     throw;
             }
+            finally { Finaly?.Invoke(); }
         }
     }
 

@@ -5,13 +5,22 @@ using System.Linq;
 
 namespace MARGO.BL.Segment
 {
-    class SegmentStatsDecorator
+    public interface ISegmentStats
+    {
+        //string LayerID { get; }
+        IEnumerable<int> Segment { get; set; }
+        byte GetSample(SampleType sType);
+    }
+
+    class SegmentStatsDecorator : ISegmentStats
     {
         private const ushort MaxStackLimit = 4 * 1024; // n*K*B(yte) = 4KB :D
 
         private int count;
         private IEnumerable<int> myIndexes;
-        public IEnumerable<int> Indexes
+
+        //public string LayerID { get; }
+        public IEnumerable<int> Segment
         {
             get { return myIndexes; }
             set
@@ -22,7 +31,11 @@ namespace MARGO.BL.Segment
         }
 
         private readonly ReadOnlyMemory<byte> myLayer;
-        public SegmentStatsDecorator(ReadOnlyMemory<byte> layer) { myLayer = layer; }
+        public SegmentStatsDecorator(ReadOnlyMemory<byte> layer)
+        {
+            //LayerID = layerId string layerId,
+            myLayer = layer;
+        }
 
         public byte GetSample(SampleType sType)
             => sType switch
@@ -31,7 +44,7 @@ namespace MARGO.BL.Segment
                 SampleType.Median => Median(),
                 SampleType.Mode => Mode(),
                 SampleType.Range => Range(),
-                _ => throw new ArgumentException("Unknown sample type.", nameof(sType)),
+                _ => throw new ArgumentException($"Unknown sample type. [{sType}]", nameof(sType)),
             };
 
 
@@ -40,7 +53,7 @@ namespace MARGO.BL.Segment
             int value = 0;
 
             var layer = myLayer.Span;
-            foreach (var idx in Indexes)
+            foreach (var idx in Segment)
                 value += layer[idx];
 
             value /= count;
@@ -54,7 +67,7 @@ namespace MARGO.BL.Segment
 
             var layer = myLayer.Span;
             int i = 0;
-            foreach (int idx in Indexes)
+            foreach (int idx in Segment)
                 values[i++] = layer[idx];
 
             ShellSort(values);
@@ -68,7 +81,7 @@ namespace MARGO.BL.Segment
 
             var layer = myLayer.Span;
             int i = 0;
-            foreach (int idx in Indexes)
+            foreach (int idx in Segment)
                 values[i++] = layer[idx];
 
             ShellSort(values);
@@ -104,7 +117,7 @@ namespace MARGO.BL.Segment
             byte max = byte.MinValue;
 
             var layer = myLayer.Span;
-            foreach (int idx in Indexes)
+            foreach (int idx in Segment)
             {
                 byte value = layer[idx];
 
@@ -133,7 +146,7 @@ namespace MARGO.BL.Segment
                     while (j >= 0 && values[j] > aid)
                     {
                         values[j + dist] = values[j];
-                        j = j - dist;
+                        j -= dist;
                     }
 
                     values[j + dist] = aid;

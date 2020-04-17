@@ -12,8 +12,8 @@ namespace MARGO.BL
     public class Project
     {
         #region Services
-        private readonly IIOService myIOService = Services.GetIO();
-        private readonly IProcessingFunctions myProcessingFunctions = Services.GetProcessingFunctions();
+        private readonly IIOService myIOService = MyServices.GetIO();
+        private readonly IProcessingFunctions myProcessingFunctions = MyServices.GetProcessingFunctions();
         #endregion
 
         private readonly Runner myRunner = new Runner();
@@ -173,9 +173,46 @@ namespace MARGO.BL
             }
         }
 
-        public async Task ClasifyAsync(IEnumerable<ISampleGroup> samples)
+        public async Task ClasifyAsync(SampleType sType, IEnumerable<ISampleGroup> samples)
         {
+            int shortRegisterCount;
 
+            if (mySampleLayers.Count > (shortRegisterCount = System.Numerics.Vector<short>.Count))
+                throw new NotSupportedException($"Layer count [{mySampleLayers.Count}] higher than [{shortRegisterCount}].");
+
+
+            var segmentStats = new ISegmentStats[mySampleLayers.Count];
+            int i = 0;
+            foreach (var lyr in mySampleLayers)
+                segmentStats[i++] = new SegmentStatsDecorator(lyr.Value.Memory);
+
+            IClassifier classifier = new MinDistClassifier();
+            var categorySmaples = await Task.Run(
+                                    () => classifier.CreateCategorySmaples(sType, samples, mySegments.Select(mst => mst.Items), segmentStats))
+                                        .ConfigureAwait(false);
+
+            MinDistClassifier.Initialize(categorySmaples);
+            var classifiedImage = new byte[mySampleLayers.First().Value.Memory.Length];
+            var categoryMapping = classifier.CreateCategoryMapping(categorySmaples.Keys);
+
+            await myRunner.RunAsync(mySegments.Count(), LevelOfParallelism,
+                (start, length) =>
+                {
+                    Span<short> segmentBuffer = stackalloc short[shortRegisterCount];
+                    segmentBuffer.Fill(0);
+                    foreach (var segment in mySegments.Skip(start).Take(length).Select(mst => mst.Items))
+                    {
+                        var segmentSample = classifier.CreateSample(sType, segment, segmentStats);
+
+                        for (int j = 0; j < segmentSample.Length; j++)
+                            segmentBuffer[j] = segmentSample[j];
+
+                        int category = classifier.Classify(segmentBuffer);
+
+                        foreach (var idx in segment)
+                            classifiedImage[idx] = categoryMapping[category];
+                    }
+                }).ConfigureAwait(false);
         }
     }
 }
