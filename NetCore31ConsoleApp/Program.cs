@@ -17,26 +17,35 @@ namespace SandBoxConsoleApp
         private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
         private readonly static Project PROJECT = Project.Instance;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            //PROJECT.Load(new string[3]
-            //{
-            //    _b40Path,
-            //    _b30Path,
-            //    _b20Path
-            //});
-            //PROJECT.Cut();
-            //await PROJECT.CalculateVariantsWithStatsAsync();
-            //PROJECT.ReclassToByteLog();
-            //await PROJECT.FindMinimasAsync();
+            var pc = Environment.ProcessorCount;
+            Console.WriteLine(pc);
 
-            //Console.WriteLine("DONE");
+            var tasks = new Task[pc];
 
-            TimeSpan timeSpan = TimeSpan.Zero;
+            Random rnd = new Random();
+            for (int i = 0; i < pc; i++)
+            {
+                int num = rnd.Next(0, pc/2);
 
-            Console.WriteLine(timeSpan.ToString());
+                tasks[i] = Task.Run(() => StringLockTest(num));
+            }
+            await Task.WhenAll(tasks);
 
             Console.ReadKey();
+        }
+
+        private static void StringLockTest(int num)
+        {
+            var thread = Thread.CurrentThread;                
+            Console.WriteLine($"{thread.ManagedThreadId} ENTERS [{num}]");
+            lock (num.ToString())
+            {
+                Thread.Sleep(250);
+                Console.WriteLine($"{thread.ManagedThreadId} EXECUTES  [{num}]");
+            }
+            Console.WriteLine($"{thread.ManagedThreadId} EXITS  [{num}]");
         }
     }
 }

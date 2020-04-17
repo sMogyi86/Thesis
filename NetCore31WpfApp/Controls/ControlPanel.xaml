@@ -3,7 +3,9 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-    xmlns:img="clr-namespace:MARGO.BL.Img;assembly=MARGO.BL">
+    xmlns:img="clr-namespace:MARGO.BL.Img;assembly=MARGO.BL"
+    xmlns:common="clr-namespace:MARGO.Common"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <UserControl.Resources>
         <ObjectDataProvider
@@ -14,6 +16,12 @@
                 <x:Type TypeName="img:SampleType" />
             </ObjectDataProvider.MethodParameters>
         </ObjectDataProvider>
+
+        <!--<common:StringColorConverter x:Key="ColorConverter" />-->
+        <common:IntColorConverter x:Key="ColorConverter" />
+
+        <sys:String x:Key="ElapsedTimeFormat">h\:mm\:ss\.fff</sys:String>
+
     </UserControl.Resources>
 
     <Grid Grid.Column="0" Style="{StaticResource ContainerGridStyle}">
@@ -36,11 +44,11 @@
                         Command="{Binding LoadCommand}"
                         Content="Load&gt;&gt;"
                         Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Text="{Binding LoadTime}" />
+                    <TextBlock Text="{Binding LoadTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Label Content="Párhúzamos szálak" />
-                    <TextBox Text="{Binding LevelOfParallelism}" />
+                    <TextBox Text="{Binding LevelOfParallelism, UpdateSourceTrigger=PropertyChanged}" />
                 </StackPanel>
             </StackPanel>
         </GroupBox>
@@ -58,7 +66,7 @@
                         Command="{Binding ComposeCommand}"
                         Content="Compose&gt;&gt;"
                         Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Text="{Binding ComposeTime}" />
+                    <TextBlock Text="{Binding ComposeTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
                 </StackPanel>
             </StackPanel>
         </GroupBox>
@@ -69,31 +77,61 @@
                     Command="{Binding AutoPlayCommand}"
                     Content="AutoPlay"
                     Style="{StaticResource ButtonStyle}" />
-                <TextBlock Text="{Binding AutoPlayTime}" />
+                <TextBlock Text="{Binding AutoPlayTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
             </StackPanel>
         </GroupBox>-->
 
         <GroupBox Grid.Row="3">
-            <StackPanel>
-                <!--<Button
-                                Command="{Binding TopLeftCommand}"
-                                Content="TopLeft"
-                                Style="{StaticResource ButtonStyle}" />-->
-                <TextBox Text="{Binding TopLeftPoint}" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
 
-                <!--<Button
-                                Command="{Binding BottomRightCommand}"
-                                Content="BottomRight"
-                                Style="{StaticResource ButtonStyle}" />-->
-                <TextBox Text="{Binding BottomRightPoint}" />
-                <StackPanel Orientation="Horizontal">
-                    <Button
-                        Command="{Binding CutCommand}"
-                        Content="Cut&gt;&gt;"
-                        Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Text="{Binding CutTime}" />
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Command="{Binding TopLeftCommand}"
+                    Content="TopLeft"
+                    Style="{StaticResource ButtonStyle}" />
+                <StackPanel
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Orientation="Horizontal">
+                    <TextBlock Text="{Binding TopLeftX, StringFormat=X: {0:F0}}" />
+                    <TextBlock Text="{Binding TopLeftY, StringFormat=Y: {0:F0}}" />
                 </StackPanel>
-            </StackPanel>
+
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Command="{Binding BottomRightCommand}"
+                    Content="BottomRight"
+                    Style="{StaticResource ButtonStyle}" />
+                <StackPanel
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Orientation="Horizontal">
+                    <TextBlock Text="{Binding BottomRightX, StringFormat=X: {0:F0}}" />
+                    <TextBlock Text="{Binding BottomRightY, StringFormat=Y: {0:F0}}" />
+                </StackPanel>
+
+                <Button
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Command="{Binding CutCommand}"
+                    Content="Cut&gt;&gt;"
+                    Style="{StaticResource ButtonStyle}" />
+                <TextBlock
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Text="{Binding CutTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+            </Grid>
         </GroupBox>
 
         <GroupBox Grid.Row="4">
@@ -113,7 +151,7 @@
                         HorizontalAlignment="Right" />
                     <TextBox
                         Grid.Column="1"
-                        Text="{Binding VariantsRange}"
+                        Text="{Binding VariantsRange, UpdateSourceTrigger=PropertyChanged}"
                         HorizontalAlignment="Stretch" />
                 </Grid>
                 <Grid Grid.Row="1">
@@ -127,15 +165,15 @@
                         Command="{Binding VariantsCommand}"
                         Content="Variants&gt;&gt;"
                         Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Grid.Column="1" Text="{Binding VariantsTime}" />
+                    <TextBlock Grid.Column="1" Text="{Binding VariantsTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
                 </Grid>
             </Grid>
         </GroupBox>
 
-
         <GroupBox Grid.Row="5">
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition />
                     <RowDefinition />
                     <RowDefinition />
                 </Grid.RowDefinitions>
@@ -148,7 +186,7 @@
                         Grid.Column="0"
                         Content="MinimasRange"
                         HorizontalAlignment="Right" />
-                    <TextBox Grid.Column="1" Text="{Binding MinimasRange}" />
+                    <TextBox Grid.Column="1" Text="{Binding MinimasRange, UpdateSourceTrigger=PropertyChanged}" />
                 </Grid>
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
@@ -161,7 +199,18 @@
                         Command="{Binding MinimasCommand}"
                         Content="Minimas&gt;&gt;"
                         Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Grid.Column="1" Text="{Binding MinimasTime}" />
+                    <TextBlock Grid.Column="1" Text="{Binding MinimasTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+                </Grid>
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Label
+                        Grid.Column="0"
+                        Content="MinimasCount"
+                        HorizontalAlignment="Right" />
+                    <TextBlock Grid.Column="1" Text="{Binding MinimasCount}" />
                 </Grid>
             </Grid>
         </GroupBox>
@@ -181,12 +230,12 @@
                     Grid.Row="0"
                     Grid.Column="0"
                     Command="{Binding FloodCommand}"
-                    Content="Flood"
+                    Content="Flood&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
                 <TextBlock
                     Grid.Row="0"
                     Grid.Column="1"
-                    Text="{Binding FloodTime}" />
+                    Text="{Binding FloodTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
                 <Label
                     Grid.Row="1"
                     Grid.Column="0"
@@ -202,19 +251,120 @@
                     Grid.Column="0"
                     CommandParameter="{Binding SampleType}"
                     Command="{Binding CreateSampleCommand}"
-                    Content="Compose"
+                    Content="Compose&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
                 <TextBlock
                     Grid.Row="2"
                     Grid.Column="1"
-                    Text="{Binding SampleTime}" />
+                    Text="{Binding SampleTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="7" Height="50">
+        <GroupBox Grid.Row="7">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
 
+                <Label
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Content="Color:" />
+                <xctk:ColorPicker
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Name="myColorPicker"
+                    SelectedColor="{Binding CurrentColor, Converter={StaticResource ColorConverter}}" />
+
+                <Label
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Content="Name:" />
+                <TextBox
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Text="{Binding CurrentName, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Command="{Binding CreateGroupCommand}"
+                    Content="CreateGroup"
+                    Style="{StaticResource ButtonStyle}" />
+
+                <ListBox
+                    x:Name="myGroupsListView"
+                    Grid.Row="3"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    ItemsSource="{Binding Groups}"
+                    SelectedItem="{Binding CurrentGroup, Mode=OneWayToSource}">
+
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Rectangle
+                                    Grid.Column="0"
+                                    Width="12"
+                                    Height="12"
+                                    Margin="3">
+                                    <Rectangle.Fill>
+                                        <SolidColorBrush Color="{Binding Color, Converter={StaticResource ColorConverter}}" />
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Count}" />
+
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+
+                </ListBox>
+
+                <Button
+                    Grid.Row="4"
+                    Grid.Column="0"
+                    CommandParameter="{Binding CurrentGroup, Mode=OneWay}"
+                    Command="{Binding DeleteGroupCommand}"
+                    Content="DeleteGroup"
+                    Style="{StaticResource ButtonStyle}" />
+                <Button
+                    Grid.Row="4"
+                    Grid.Column="1"
+                    CommandParameter="{Binding CurrentGroup, Mode=OneWay}"
+                    Command="{Binding AddToGroupCommand}"
+                    Content="AddToGroup"
+                    Style="{StaticResource ButtonStyle}" />
+
+                <Button
+                    Grid.Row="5"
+                    Grid.Column="0"
+                    Command="{Binding ClasifyCommand}"
+                    Content="Clasify&gt;&gt;"
+                    Style="{StaticResource ButtonStyle}" />
+                <TextBlock
+                    Grid.Row="5"
+                    Grid.Column="1"
+                    Text="{Binding ClasifyTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+
+
+            </Grid>
         </GroupBox>
-        <!--<xctk:ColorPicker Name="ClrPcker_Background" />-->
     </Grid>
 
 </UserControl>

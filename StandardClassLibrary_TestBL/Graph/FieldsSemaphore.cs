@@ -1,17 +1,14 @@
-﻿using System;
-using System.Runtime.CompilerServices;
-using System.Threading;
+﻿using System.Runtime.CompilerServices;
 
 namespace MARGO.BL.Graph
 {
-    internal sealed class FieldsSemaphore : IDisposable
+    internal static class FieldsSemaphore
     {
-        private readonly SemaphoreSlim mySemaphoreSlim = new SemaphoreSlim(1);
-        private readonly bool[] myNodesTaken;
+        private static bool[] NODESTAKEN;
 
 
 
-        public FieldsSemaphore(int length) { myNodesTaken = new bool[length]; }
+        public static void Initialize(int length) { NODESTAKEN = new bool[length]; }
 
 
 
@@ -23,20 +20,12 @@ namespace MARGO.BL.Graph
         /// <returns></returns>
         /// 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryTake(int idx)
+        public static bool TryTake(int idx)
         {
-            mySemaphoreSlim.Wait();
-            try
+            lock (idx.ToString())
             {
-                return myNodesTaken[idx] ? false : (myNodesTaken[idx] = true);
-            }
-            finally
-            {
-                mySemaphoreSlim.Release();
+                return NODESTAKEN[idx] ? false : (NODESTAKEN[idx] = true);
             }
         }
-
-        public void Dispose()
-            => mySemaphoreSlim.Dispose();
     }
 }

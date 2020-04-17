@@ -6,16 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace MARGO.ViewModels
 {
-    class ViewModel : ObservableBase
+    class ViewModel : ObservableBase, IUIHelper
     {
         #region Services
         private readonly IImageFactory myImageFactory = Services.GetImageFactory();
@@ -48,7 +48,7 @@ namespace MARGO.ViewModels
                     this.RaisePropertyChanged(nameof(CutCommand));
                 }
             });
-        public string LoadTime { get; set; }
+        public TimeSpan LoadTime { get; set; }
 
 
         public RasterLayer Red { get; set; }
@@ -66,27 +66,31 @@ namespace MARGO.ViewModels
                 CurrentMap = Maps.Last();
             },
             () => Red != null && Green != null && Blue != null);
-        public string ComposeTime { get; set; }
+        public TimeSpan ComposeTime { get; set; }
 
 
-        //public ICommand TopLeftCommand =>  new DelegateCommand(null, () => false);
-        public Point TopLeftPoint { get; set; } = new Point(1800, 1600);
-        //public ICommand BottomRightCommand => new DelegateCommand(null, () => false);
-        public Point BottomRightPoint { get; set; } = new Point(6300, 5800);
+        public ICommand TopLeftCommand => new DelegateCommand(() => Handle = p => TopLeftPoint = p, () => Red != null && Green != null && Blue != null);
+        private Point? TopLeftPoint { get; set; } = new Point(1800, 1600);
+        public double? TopLeftX => TopLeftPoint?.X;
+        public double? TopLeftY => TopLeftPoint?.Y;
+        public ICommand BottomRightCommand => new DelegateCommand(() => Handle = p => BottomRightPoint = p, () => Red != null && Green != null && Blue != null);
+        private Point? BottomRightPoint { get; set; } = new Point(6300, 5800);
+        public double? BottomRightX => BottomRightPoint?.X;
+        public double? BottomRightY => BottomRightPoint?.Y;
         public string CutNamePrefix { get; set; }
         public ICommand CutCommand => new DelegateCommandAsync<string>(
             async (prefix) =>
             {
                 StartBusy();
-                await Project.Cut(TopLeftPoint.X, TopLeftPoint.Y, BottomRightPoint.X, BottomRightPoint.Y, prefix);
+                await Project.Cut((int)TopLeftPoint.Value.X, (int)TopLeftPoint.Value.Y, (int)BottomRightPoint.Value.X, (int)BottomRightPoint.Value.Y, prefix);
                 CutTime = EndBusy();
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
                 this.RaisePropertyChanged(nameof(VariantsCommand));
             },
-            _ => Layers.Any() && TopLeftPoint != Point.Empty && BottomRightPoint != Point.Empty);
-        public string CutTime { get; set; }
+            _ => Layers.Any() && TopLeftPoint != null && BottomRightPoint != null);
+        public TimeSpan CutTime { get; set; }
 
 
         public byte VariantsRange { get; set; } = 3;
@@ -104,7 +108,7 @@ namespace MARGO.ViewModels
                 this.RaisePropertyChanged(nameof(MinimasCommand));
             },
             range => Project.CanCalcVariants && range > 1 && range % 2 == 1);
-        public string VariantsTime { get; set; }
+        public TimeSpan VariantsTime { get; set; }
 
 
         public byte MinimasRange { get; set; } = 3;
@@ -121,7 +125,8 @@ namespace MARGO.ViewModels
                 this.RaisePropertyChanged(nameof(FloodCommand));
             },
             range => Project.LOGGED != null && range > 1 && range % 2 == 1);
-        public string MinimasTime { get; set; }
+        public TimeSpan MinimasTime { get; set; }
+        public string MinimasCount { get; set; } = "TODO";
 
 
         public ICommand FloodCommand => new DelegateCommandAsync(
@@ -132,7 +137,7 @@ namespace MARGO.ViewModels
                 FloodTime = EndBusy();
             },
             () => Project.CanFlood);
-        public string FloodTime { get; set; }
+        public TimeSpan FloodTime { get; set; }
 
 
         public SampleType SampleType { get; set; } = SampleType.Mean;
@@ -141,12 +146,12 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.CreateSampleLayersAsync(smapleType, SampleType.ToString());
-                SampleTime =  FloodTime = EndBusy();
+                SampleTime = FloodTime = EndBusy();
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
             });
-        public string  SampleTime { get; set; }
+        public TimeSpan SampleTime { get; set; }
 
 
         public ObservableCollection<Image> Maps { get; } = new ObservableCollection<Image>();
@@ -184,6 +189,87 @@ namespace MARGO.ViewModels
             },
             img => img != null);
 
+
+        private DelegateCommand<Point?> myClickHandlerCommand;
+        public Action<Point?> Handle
+        {
+            get
+            {
+                return myClickHandlerCommand is null ? (null as Action<Point?>)
+                  : point => myClickHandlerCommand.Execute(point);
+            }
+            set
+            {
+                if (value is null)
+                {
+                    myClickHandlerCommand = null;
+                    EndBusy();
+                }
+                else
+                {
+                    StartBusy();
+
+                    myClickHandlerCommand = new DelegateCommand<Point?>(
+                    point =>
+                    {
+                        EndBusy();
+                        value.Invoke(point);
+                        Handle = null;
+                    });
+                }
+            }
+        }
+        public ICommand ResetClickHandlerCommand => new DelegateCommand(() => Handle = null);
+
+
+        public int CurrentColor { get; set; }
+        public string CurrentName { get; set; }
+        public ICommand CreateGroupCommand => new DelegateCommand(
+            () =>
+            {
+                Groups.Add(new SampleGroupVM(CurrentName, CurrentColor, p => currentMap.Parts.Width * (int)p.Y + (int)p.X));
+                CurrentColor = 0;
+                CurrentName = string.Empty;
+            },
+            () => 0 != CurrentColor && !string.IsNullOrEmpty(CurrentName) && !Groups.Any(g => CurrentColor == g.Color));
+        public ObservableCollection<SampleGroupVM> Groups { get; } = new ObservableCollection<SampleGroupVM>();
+        private SampleGroupVM myCurrentGroup;
+        public SampleGroupVM CurrentGroup
+        {
+            get { return myCurrentGroup; }
+            set
+            {
+                myCurrentGroup = value;
+                this.RaisePropertyChanged(nameof(DeleteGroupCommand));
+                this.RaisePropertyChanged(nameof(AddToGroupCommand));
+            }
+        }
+        public ICommand DeleteGroupCommand => new DelegateCommand<SampleGroupVM>(
+            grp =>
+            {
+                Groups.Remove(grp);
+                this.RaisePropertyChanged(nameof(ClasifyCommand));
+            }, grp => grp != null);
+        public ICommand AddToGroupCommand => new DelegateCommand<SampleGroupVM>(
+            grp => Handle =
+                p =>
+                {
+                    grp.AddPoint(p);
+                    this.RaisePropertyChanged(nameof(ClasifyCommand));
+                }, grp => grp != null);
+        public ICommand ClasifyCommand => new DelegateCommandAsync(
+            async () =>
+            {
+                StartBusy();
+                await Project.ClasifyAsync(Groups);
+                ClasifyTime = EndBusy();
+            },
+            () => Groups.Any());
+        public TimeSpan ClasifyTime { get; set; }
+
+
+        //public void TimerElapsedAt(Point? point) { }
+
         private void ChangeFreshMap()
         {
             Red = Layers.First(ch => ch.ID.EndsWith(Red.ID) && ch.ID != Red.ID);
@@ -199,14 +285,14 @@ namespace MARGO.ViewModels
         private void StartBusy()
         {
             IsBusy = true;
-            myStopwatch.Start();
+            myStopwatch.Restart();
         }
 
-        private string EndBusy()
+        private TimeSpan EndBusy()
         {
             myStopwatch.Stop();
             IsBusy = false;
-            return myStopwatch.Elapsed.ToString(@"h\:mm\:ss\.fff");
+            return myStopwatch.Elapsed;
         }
     }
 }

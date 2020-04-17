@@ -1,15 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Windows;
+﻿using MARGO.Common;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MARGO.Controls
 {
@@ -21,6 +12,30 @@ namespace MARGO.Controls
         public MapView()
         {
             InitializeComponent();
+
+            //myTimer.Elapsed += MyTimer_Elapsed;
+        }
+
+        //private void MyTimer_Elapsed(object sender, ElapsedEventArgs e)
+        //{
+        //    myTimer.Stop();
+
+        //    if (this.DataContext is IUIHelper helper)
+        //        helper.TimerElapsedAt(myZoomAndPanControl.MousePosition);
+        //}
+
+        private void myZoomAndPanControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (this.DataContext is IUIHelper helper)
+                helper.Handle?.Invoke(myZoomAndPanControl.MousePosition);
+        }
+
+        //private readonly Timer myTimer = new Timer(500);
+
+        private void myZoomAndPanControl_MouseMove(object sender, MouseEventArgs e)
+        {
+            //myTimer.Stop();
+            //myTimer.Start();
         }
     }
 }

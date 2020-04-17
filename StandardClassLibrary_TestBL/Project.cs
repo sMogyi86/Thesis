@@ -1,5 +1,6 @@
 ﻿using MARGO.BL.Graph;
 using MARGO.BL.Img;
+using MARGO.BL.Segment;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -120,11 +121,14 @@ namespace MARGO.BL
         {
             int minimaCount = myMinimasIdxs.Count();
 
-            FieldsSemaphore semaphore = null;
-            if (LevelOfParallelism > 1)
-                semaphore = new FieldsSemaphore(LOGGED.Memory.Length);
+            bool isParallel = LevelOfParallelism > 1;
 
-            PrimsMST.Initalize(LOGGED.Width, semaphore);
+            if (isParallel)
+                FieldsSemaphore.Initialize(LOGGED.Memory.Length);
+            else
+                FieldsSemaphore.Initialize(0);
+
+            PrimsMST.Initalize(LOGGED.Width, isParallel);
 
             // Create seeds
             var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
@@ -143,8 +147,6 @@ namespace MARGO.BL
                                     LevelOfParallelism,
                                     listSeeds => myProcessingFunctions.Flood(listSeeds))
                                     .ConfigureAwait(false);
-
-            semaphore?.Dispose();
 
             var segments = new List<IMST>(minimaCount);
             foreach (var lst in resultsSeeds)
@@ -171,5 +173,9 @@ namespace MARGO.BL
             }
         }
 
+        public async Task ClasifyAsync(IEnumerable<ISampleGroup> samples)
+        {
+
+        }
     }
 }

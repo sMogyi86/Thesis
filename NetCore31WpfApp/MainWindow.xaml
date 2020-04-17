@@ -10,6 +10,10 @@
         <vms:ViewModel />
     </Window.DataContext>
 
+    <Window.InputBindings>
+        <MouseBinding MouseAction="RightClick" Command="{Binding ResetClickHandlerCommand}" />
+    </Window.InputBindings>
+
     <Window.Resources>
         <common:BooleanNOTConverter x:Key="BooleanNOTConverter" />
     </Window.Resources>
@@ -20,7 +24,13 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <controls:ControlPanel Grid.Column="0" IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanNOTConverter}}" />
+        <ScrollViewer
+            Grid.Column="0"
+            HorizontalScrollBarVisibility="Hidden"
+            VerticalScrollBarVisibility="Auto"
+            FlowDirection="RightToLeft">
+            <controls:ControlPanel IsEnabled="{Binding IsBusy, Converter={StaticResource BooleanNOTConverter}}" FlowDirection="LeftToRight" />
+        </ScrollViewer>
 
         <TabControl Grid.Column="1">
             <TabItem Header="Map">

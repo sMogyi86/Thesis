@@ -29,9 +29,9 @@ namespace MARGO.BL.Graph
 
 
         private static readonly int[] OFFSETS = new int[4];
-        private static FieldsSemaphore FIELDSEMAPHORE;
+        private static bool ISPARALLEL;
         private static bool INITIALIZED = false;
-        public static void Initalize(int dataWidth, FieldsSemaphore fieldsSemaphore)
+        public static void Initalize(int dataWidth, bool isParallel)
         {
             if (!INITIALIZED)
             {
@@ -40,7 +40,7 @@ namespace MARGO.BL.Graph
                 OFFSETS[2] = -1;
                 OFFSETS[3] = -dataWidth;
 
-                FIELDSEMAPHORE = fieldsSemaphore;
+                ISPARALLEL = isParallel;
 
                 INITIALIZED = true;
             }
@@ -116,7 +116,7 @@ namespace MARGO.BL.Graph
             var picked = myReachables.First();
             int pIdx = picked[1];
 
-            if (FIELDSEMAPHORE == null || FIELDSEMAPHORE.TryTake(pIdx))
+            if (ISPARALLEL && FieldsSemaphore.TryTake(pIdx))
             {
                 myLastCoupledIdx = pIdx;
                 myItems.Add(myLastCoupledIdx);
