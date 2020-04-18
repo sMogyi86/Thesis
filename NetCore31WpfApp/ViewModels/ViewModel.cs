@@ -111,7 +111,7 @@ namespace MARGO.ViewModels
         public TimeSpan VariantsTime { get; set; }
 
 
-        public byte MinimasRange { get; set; } = 3;
+        public byte MinimasRange { get; set; } = 5;
         public ICommand MinimasCommand => new DelegateCommandAsync<byte>(
             async (range) =>
             {
@@ -262,6 +262,10 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.ClasifyAsync(sType, Groups);
+
+                Maps.Add(myImageFactory.CreateImage($"{Project.CLASSIFIEDIMAGE}_RAW", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE)));
+                CurrentMap = Maps.Last();
+                Maps.Add(myImageFactory.CreateImage($"{Project.CLASSIFIEDIMAGE}_COLORED", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE, Project.ColorMapping)));
             },
             _ => Groups.Any())
         { Finaly = () => ClasifyTime = EndBusy() };

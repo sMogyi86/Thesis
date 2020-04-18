@@ -34,6 +34,8 @@ namespace MARGO.BL
         private IEnumerable<int> myMinimasIdxs = Enumerable.Empty<int>();
 
         private IEnumerable<IMST> mySegments = Enumerable.Empty<IMST>();
+        public ReadOnlyMemory<byte> CLASSIFIEDIMAGE { get; private set; }
+        public IReadOnlyDictionary<byte, int> ColorMapping { get; private set; }
 
 
         private Project() { }
@@ -177,13 +179,13 @@ namespace MARGO.BL
         {
             int shortRegisterCount;
 
-            if (mySampleLayers.Count > (shortRegisterCount = System.Numerics.Vector<short>.Count))
-                throw new NotSupportedException($"Layer count [{mySampleLayers.Count}] higher than [{shortRegisterCount}].");
+            if (myCutedLayers.Count > (shortRegisterCount = System.Numerics.Vector<short>.Count))
+                throw new NotSupportedException($"Layer count [{myCutedLayers.Count}] higher than [{shortRegisterCount}].");
 
 
-            var segmentStats = new ISegmentStats[mySampleLayers.Count];
+            var segmentStats = new ISegmentStats[myCutedLayers.Count];
             int i = 0;
-            foreach (var lyr in mySampleLayers)
+            foreach (var lyr in myCutedLayers)
                 segmentStats[i++] = new SegmentStatsDecorator(lyr.Value.Memory);
 
             IClassifier classifier = new MinDistClassifier();
@@ -192,20 +194,23 @@ namespace MARGO.BL
                                         .ConfigureAwait(false);
 
             MinDistClassifier.Initialize(categorySmaples);
-            var classifiedImage = new byte[mySampleLayers.First().Value.Memory.Length];
-            var categoryMapping = classifier.CreateCategoryMapping(categorySmaples.Keys);
+            var classifiedImage = new byte[myCutedLayers.First().Value.Memory.Length];
+            var mappings = classifier.CreateMappings(categorySmaples.Keys);
+            var categoryMapping = mappings.CategoryMapping;
 
             await myRunner.RunAsync(mySegments.Count(), LevelOfParallelism,
                 (start, length) =>
                 {
+                    Span<byte> sampleVector = stackalloc byte[segmentStats.Length];
                     Span<short> segmentBuffer = stackalloc short[shortRegisterCount];
                     segmentBuffer.Fill(0);
                     foreach (var segment in mySegments.Skip(start).Take(length).Select(mst => mst.Items))
                     {
-                        var segmentSample = classifier.CreateSample(sType, segment, segmentStats);
+                        classifier.CreateSample(sType, segment, segmentStats, sampleVector);
 
-                        for (int j = 0; j < segmentSample.Length; j++)
-                            segmentBuffer[j] = segmentSample[j];
+                        // 8=>16 byte=>short conversion
+                        for (int j = 0; j < sampleVector.Length; j++)
+                            segmentBuffer[j] = sampleVector[j];
 
                         int category = classifier.Classify(segmentBuffer);
 
@@ -213,6 +218,9 @@ namespace MARGO.BL
                             classifiedImage[idx] = categoryMapping[category];
                     }
                 }).ConfigureAwait(false);
+
+            CLASSIFIEDIMAGE = classifiedImage;
+            ColorMapping = mappings.ColorMapping;
         }
     }
 }

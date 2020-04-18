@@ -1,36 +1,52 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace MARGO.BL.Img
 {
     public class ImageParts
     {
-        public bool IsMono { get; }
+        internal enum Plan
+        {
+            RGB,
+            Mono,
+            Mapping
+        }
+
+        internal Plan Type { get; }
         public int Width { get; }
         public int Height { get; }
-        public ReadOnlyMemory<byte> Red { get; }
-        public ReadOnlyMemory<byte> Green { get; }
-        public ReadOnlyMemory<byte> Blue { get; }
-        public ReadOnlyMemory<byte> Mono { get; }
+        public IReadOnlyDictionary<char, ReadOnlyMemory<byte>> Chanels { get; private set; }
+        internal IReadOnlyDictionary<byte, int> ColorMapping { get; private set; }
 
-        private ImageParts(int width, int height, bool isMono)
+        private ImageParts(int width, int height, Plan plan)
         {
             Width = width;
             Height = height;
-            IsMono = isMono;
+            Type = plan;
         }
 
         public ImageParts(int width, int height, ReadOnlyMemory<byte> mono)
-            : this(width, height, true)
+            : this(width, height, Plan.Mono)
         {
-            Mono = mono;
+            Chanels = new Dictionary<char, ReadOnlyMemory<byte>>() { { 'M', mono } };
         }
 
         public ImageParts(int width, int height, ReadOnlyMemory<byte> red, ReadOnlyMemory<byte> green, ReadOnlyMemory<byte> blue)
-            : this(width, height, false)
+            : this(width, height, Plan.RGB)
         {
-            Red = red;
-            Green = green;
-            Blue = blue;
+            Chanels = new Dictionary<char, ReadOnlyMemory<byte>>()
+            {
+                { 'R', red},
+                { 'G', green},
+                { 'B', blue}
+            };
+        }
+
+        public ImageParts(int width, int height, ReadOnlyMemory<byte> chanel, IReadOnlyDictionary<byte, int> colorMapping)
+            : this(width, height, Plan.Mapping)
+        {
+            Chanels = new Dictionary<char, ReadOnlyMemory<byte>>() { { 'C', chanel } };
+            ColorMapping = colorMapping;
         }
     }
 }
