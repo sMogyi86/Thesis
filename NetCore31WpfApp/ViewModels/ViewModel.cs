@@ -150,7 +150,7 @@ namespace MARGO.ViewModels
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
             })
-        { Finaly = () => SampleTime = FloodTime = EndBusy() };
+        { Finaly = () => SampleTime = EndBusy() };
         public TimeSpan SampleTime { get; set; }
 
 
@@ -248,28 +248,28 @@ namespace MARGO.ViewModels
             grp =>
             {
                 Groups.Remove(grp);
-                this.RaisePropertyChanged(nameof(ClasifyCommand));
+                this.RaisePropertyChanged(nameof(ClassifyCommand));
             }, grp => grp != null);
         public ICommand AddToGroupCommand => new DelegateCommand<SampleGroupVM>(
             grp => Handle =
                 p =>
                 {
                     grp.AddPoint(p);
-                    this.RaisePropertyChanged(nameof(ClasifyCommand));
+                    this.RaisePropertyChanged(nameof(ClassifyCommand));
                 }, grp => grp != null);
-        public ICommand ClasifyCommand => new DelegateCommandAsync<SampleType>(
+        public ICommand ClassifyCommand => new DelegateCommandAsync<SampleType>(
             async sType =>
             {
                 StartBusy();
-                await Project.ClasifyAsync(sType, Groups);
+                await Project.ClassifyAsync(sType, Groups);
 
-                Maps.Add(myImageFactory.CreateImage($"{Project.CLASSIFIEDIMAGE}_RAW", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE)));
+                Maps.Add(myImageFactory.CreateImage($"{nameof(Project.CLASSIFIEDIMAGE)}_RAW", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE)));
                 CurrentMap = Maps.Last();
-                Maps.Add(myImageFactory.CreateImage($"{Project.CLASSIFIEDIMAGE}_COLORED", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE, Project.ColorMapping)));
+                Maps.Add(myImageFactory.CreateImage($"{nameof(Project.CLASSIFIEDIMAGE)}_COLORED", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE, Project.ColorMapping)));
             },
             _ => Groups.Any())
-        { Finaly = () => ClasifyTime = EndBusy() };
-        public TimeSpan ClasifyTime { get; set; }
+        { Finaly = () => ClassifyTime = EndBusy() };
+        public TimeSpan ClassifyTime { get; set; }
 
 
         //public void TimerElapsedAt(Point? point) { }

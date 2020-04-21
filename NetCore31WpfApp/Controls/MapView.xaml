@@ -16,10 +16,10 @@
             Background="Black"
             MinimumZoomType="FitScreen"
             UseAnimations="False"
+            PanMouseButton="Middle"
             ZoomAndPanInitialPosition="FitScreen"
             MouseLeftButtonUp="myZoomAndPanControl_MouseLeftButtonUp"
-            MouseMove="myZoomAndPanControl_MouseMove"
-            >
+            MouseMove="myZoomAndPanControl_MouseMove">
             <Image
                 Name="Image"
                 RenderOptions.BitmapScalingMode="NearestNeighbor"

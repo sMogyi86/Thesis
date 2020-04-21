@@ -9,6 +9,7 @@ namespace MARGO.BL.Graph
     {
         bool Terminated { get; }
         int SumValue { get; }
+        byte CurrentLevel { get; }
         IEnumerable<int> Items { get; }
         void DoStep();
     }
@@ -24,14 +25,14 @@ namespace MARGO.BL.Graph
 
         public bool Terminated => !myCanStep;
         public int SumValue { get; private set; } = 0;
+        public byte CurrentLevel { get; private set; }
         public IEnumerable<int> Items => myItems;
 
 
 
         private static readonly int[] OFFSETS = new int[4];
-        private static bool ISPARALLEL;
         private static bool INITIALIZED = false;
-        public static void Initalize(int dataWidth, bool isParallel)
+        public static void Initalize(int dataWidth)
         {
             if (!INITIALIZED)
             {
@@ -39,8 +40,6 @@ namespace MARGO.BL.Graph
                 OFFSETS[1] = dataWidth;
                 OFFSETS[2] = -1;
                 OFFSETS[3] = -dataWidth;
-
-                ISPARALLEL = isParallel;
 
                 INITIALIZED = true;
             }
@@ -54,6 +53,7 @@ namespace MARGO.BL.Graph
             myLastCoupledIdx = rootIdx;
             myValueField = valueField;
             myItems.Add(myLastCoupledIdx);
+            CurrentLevel = myValueField.Span[myLastCoupledIdx];
         }
 
 
@@ -62,14 +62,16 @@ namespace MARGO.BL.Graph
         {
             if (myCanStep)
             {
-                DiscoverReachables();
+                var field = myValueField.Span;
+
+                DiscoverReachables(field);
                 if (myCanStep = AnyReachable())
                 {
                     SortReachables();
 
                     do
                     {
-                        CleanReachablesFrom(TryPickOne());
+                        CleanReachablesFrom(TryPickOne(field));
                     } while (!WasSuccessfulPick() && AnyReachable());
 
                     myCanStep = WasSuccessfulPick();
@@ -80,7 +82,7 @@ namespace MARGO.BL.Graph
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void DiscoverReachables()
+        private void DiscoverReachables(ReadOnlySpan<byte> valueField)
         {
             static int[] Dist(int currentIdx, ReadOnlySpan<byte> values, int otherOffset)
             {
@@ -96,10 +98,8 @@ namespace MARGO.BL.Graph
                 return new int[2] { (d < 0 ? -d : d), otherIdx };
             }
 
-            var span = myValueField.Span;
-
             foreach (var offset in OFFSETS)
-                myReachables.Add(Dist(myLastCoupledIdx, span, offset));
+                myReachables.Add(Dist(myLastCoupledIdx, valueField, offset));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -111,16 +111,17 @@ namespace MARGO.BL.Graph
                 );
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int TryPickOne()
+        private int TryPickOne(ReadOnlySpan<byte> valueField)
         {
             var picked = myReachables.First();
             int pIdx = picked[1];
-
-            if (ISPARALLEL && FieldsSemaphore.TryTake(pIdx))
+            
+            if (FieldsSemaphore.TryTake(pIdx))
             {
                 myLastCoupledIdx = pIdx;
                 myItems.Add(myLastCoupledIdx);
                 SumValue += picked[0];
+                CurrentLevel = valueField[myLastCoupledIdx];
             }
             else
             {
@@ -144,5 +145,10 @@ namespace MARGO.BL.Graph
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool WasSuccessfulPick()
             => myLastCoupledIdx != -1;
+
+
+
+        public override bool Equals(object obj)
+            => CurrentLevel.Equals(obj);
     }
 }

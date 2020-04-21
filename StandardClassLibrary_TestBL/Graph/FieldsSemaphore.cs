@@ -1,15 +1,48 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace MARGO.BL.Graph
 {
     internal static class FieldsSemaphore
     {
         private static bool[] NODESTAKEN;
+        private static Func<int, bool> TRYTAKE;
+        static SpinLock SPINLOCK;
 
 
 
-        public static void Initialize(int length) { NODESTAKEN = new bool[length]; }
+        public static void Initialize(int length)
+        {
+            if (length > 0)
+            {
+                SPINLOCK = new SpinLock();
+                NODESTAKEN = new bool[length];
 
+                TRYTAKE = idx =>
+                {
+                    lock (Convert.ToString(idx))
+                    {
+                        return NODESTAKEN[idx] ? false : (NODESTAKEN[idx] = true);
+                    }
+                    //bool lockTaken = false;
+                    //try
+                    //{
+                    //    SPINLOCK.Enter(ref lockTaken);
+                    //    return NODESTAKEN[idx] ? false : (NODESTAKEN[idx] = true);
+                    //}
+                    //finally
+                    //{
+                    //    if (lockTaken)
+                    //        SPINLOCK.Exit();
+                    //}
+                };
+            }
+            else
+            {
+                TRYTAKE = idx => true;
+            }
+        }
 
 
         /// <summary>
@@ -19,13 +52,7 @@ namespace MARGO.BL.Graph
         /// <param name="idx"></param>
         /// <returns></returns>
         /// 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryTake(int idx)
-        {
-            lock (idx.ToString())
-            {
-                return NODESTAKEN[idx] ? false : (NODESTAKEN[idx] = true);
-            }
-        }
+            => TRYTAKE(idx);
     }
 }

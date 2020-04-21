@@ -123,14 +123,12 @@ namespace MARGO.BL
         {
             int minimaCount = myMinimasIdxs.Count();
 
-            bool isParallel = LevelOfParallelism > 1;
-
-            if (isParallel)
+            if (LevelOfParallelism > 1)
                 FieldsSemaphore.Initialize(LOGGED.Memory.Length);
             else
-                FieldsSemaphore.Initialize(0);
+                FieldsSemaphore.Initialize(-1);
 
-            PrimsMST.Initalize(LOGGED.Width, isParallel);
+            PrimsMST.Initalize(LOGGED.Width);
 
             // Create seeds
             var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
@@ -175,7 +173,7 @@ namespace MARGO.BL
             }
         }
 
-        public async Task ClasifyAsync(SampleType sType, IEnumerable<ISampleGroup> samples)
+        public async Task ClassifyAsync(SampleType sType, IEnumerable<ISampleGroup> samples)
         {
             int shortRegisterCount;
 
@@ -189,9 +187,7 @@ namespace MARGO.BL
                 segmentStats[i++] = new SegmentStatsDecorator(lyr.Value.Memory);
 
             IClassifier classifier = new MinDistClassifier();
-            var categorySmaples = await Task.Run(
-                                    () => classifier.CreateCategorySmaples(sType, samples, mySegments.Select(mst => mst.Items), segmentStats))
-                                        .ConfigureAwait(false);
+            var categorySmaples = classifier.CreateCategorySamples(sType, samples, mySegments.Select(mst => mst.Items), segmentStats);
 
             MinDistClassifier.Initialize(categorySmaples);
             var classifiedImage = new byte[myCutedLayers.First().Value.Memory.Length];

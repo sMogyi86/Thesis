@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -30,7 +28,8 @@ namespace MARGO.Common
             if (MessageBox.Show($"[{exception.Message}]\nKívánja a hiba technikai részleteit a vágólapra másolni?", "Váratlan hiba történt!", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No) == MessageBoxResult.Yes)
                 myDispatcher.Invoke(() => this.CopyToClipBoard(exception));
 
-            if (this.Throws) { throw exception; }
+            if (this.Throws)
+                throw exception;
         }
 
         protected void CopyToClipBoard(Exception exception)

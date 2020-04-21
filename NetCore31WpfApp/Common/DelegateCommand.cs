@@ -90,7 +90,6 @@ namespace MARGO.Common
             {
                 ExceptionHandler?.Handle(ex);
             }
-            finally { Finaly?.Invoke(); }
 
             return canExecute;
         }

@@ -11,6 +11,8 @@ namespace MARGO.BL.Img
 
     internal sealed class LibTiffImageFactory : IImageFactory
     {
+        private readonly ColorBuilder cb = new ColorBuilder();
+
         public Image CreateImage(string name, ImageParts parts)
             => new Image(name, parts, this.Build);
 
@@ -63,9 +65,7 @@ namespace MARGO.BL.Img
                 }
 
                 //https://stackoverflow.com/questions/23162083/writing-a-multipaged-tif-file-from-memorystream-vs-filestream/23227792#23227792
-                tiff.Flush();
-
-                if (!tiff.WriteDirectory())
+                if (!tiff.Flush())
                     throw new IOException("The current directory was NOT written successfully!");
 
                 return new MemoryStream(((MemoryStream)tiff.Clientdata()).GetBuffer(), false);
@@ -124,19 +124,40 @@ namespace MARGO.BL.Img
             var mapping = parts.ColorMapping;
 
             byte[] rowData = new byte[tiff.ScanlineSize()];
-            for (int rowIndex = 0; rowIndex < parts.Height; rowIndex++)
+
+            if (BitConverter.IsLittleEndian)
             {
-                for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
+                for (int rowIndex = 0; rowIndex < parts.Height; rowIndex++)
                 {
-                    var argbColorBytes = BitConverter.GetBytes(mapping[chanel[rowIndex * parts.Width + pixelIndex]]);
+                    for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
+                    {
+                        int argb = mapping[chanel[rowIndex * parts.Width + pixelIndex]];
 
-                    rowData[pixelIndex * samplesPerPixel + 0] = argbColorBytes[1];
-                    rowData[pixelIndex * samplesPerPixel + 1] = argbColorBytes[2];
-                    rowData[pixelIndex * samplesPerPixel + 2] = argbColorBytes[3];
+                        rowData[pixelIndex * samplesPerPixel + 0] = cb.RFromLITTLEEndian(argb);
+                        rowData[pixelIndex * samplesPerPixel + 1] = cb.GFromLITTLEEndian(argb);
+                        rowData[pixelIndex * samplesPerPixel + 2] = cb.BFromLITTLEEndian(argb);
+                    }
+
+                    if (!tiff.WriteScanline(rowData, rowIndex))
+                        throw new IOException(@"Image data were NOT encoded and written successfully!");
                 }
+            }
+            else
+            {
+                for (int rowIndex = 0; rowIndex < parts.Height; rowIndex++)
+                {
+                    for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
+                    {
+                        int argb = mapping[chanel[rowIndex * parts.Width + pixelIndex]];
 
-                if (!tiff.WriteScanline(rowData, rowIndex))
-                    throw new IOException(@"Image data were NOT encoded and written successfully!");
+                        rowData[pixelIndex * samplesPerPixel + 0] = cb.RFromBIGEndian(argb);
+                        rowData[pixelIndex * samplesPerPixel + 1] = cb.GFromBIGEndian(argb);
+                        rowData[pixelIndex * samplesPerPixel + 2] = cb.BFromBIGEndian(argb);
+                    }
+
+                    if (!tiff.WriteScanline(rowData, rowIndex))
+                        throw new IOException(@"Image data were NOT encoded and written successfully!");
+                }
             }
         }
     }

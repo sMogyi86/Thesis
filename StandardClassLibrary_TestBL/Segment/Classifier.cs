@@ -3,12 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace MARGO.BL.Segment
 {
     public interface IClassifier
     {
-        IReadOnlyDictionary<int, byte[]> CreateCategorySmaples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> stats);
+        IReadOnlyDictionary<int, byte[]> CreateCategorySamples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> stats);
         void CreateSample(SampleType sType, IEnumerable<int> segment, IEnumerable<ISegmentStats> stats, Span<byte> sampleVector);
         int Classify(Span<short> segmentSample);
         (IReadOnlyDictionary<int, byte> CategoryMapping, IReadOnlyDictionary<byte, int> ColorMapping) CreateMappings(IEnumerable<int> categories);
@@ -16,7 +17,7 @@ namespace MARGO.BL.Segment
 
     internal abstract class Classifier : IClassifier
     {
-        public IReadOnlyDictionary<int, byte[]> CreateCategorySmaples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> segmentStats)
+        public IReadOnlyDictionary<int, byte[]> CreateCategorySamples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> segmentStats)
         {
             var categorySamples = new Dictionary<int, byte[]>(samples.Count());
 
@@ -102,12 +103,6 @@ namespace MARGO.BL.Segment
             CATEGORY_SAMPLES = csTmp;
         }
 
-        //public MinDistClassifier()
-        //{
-        //    if (CATEGORY_SAMPLES is null)
-        //        throw new InvalidOperationException($"Call static '{nameof(Initialize)}()' first!");
-        //}
-
         public override int Classify(Span<short> segmentSample)
         {
             double minDist = double.MaxValue;
@@ -128,6 +123,8 @@ namespace MARGO.BL.Segment
             return categoryID;
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private double Distance(Span<short> category, Span<short> segment)
         {
             Vector<ushort> delta = Vector.AsVectorUInt16(Vector.Subtract(new Vector<short>(category), new Vector<short>(segment))); // a-b

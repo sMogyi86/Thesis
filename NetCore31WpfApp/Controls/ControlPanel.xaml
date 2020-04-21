@@ -21,6 +21,7 @@
         <common:IntColorConverter x:Key="ColorConverter" />
 
         <sys:String x:Key="ElapsedTimeFormat">h\:mm\:ss\.fff</sys:String>
+        <sys:String x:Key="PlayHeader">Play include this.</sys:String>
 
     </UserControl.Resources>
 
@@ -33,14 +34,13 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <GroupBox Grid.Row="0">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -69,7 +69,7 @@
         <GroupBox Grid.Row="1">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -90,10 +90,10 @@
             </StackPanel>
         </GroupBox>
 
-        <GroupBox Grid.Row="3">
+        <GroupBox Grid.Row="2">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -149,10 +149,10 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="4">
+        <GroupBox Grid.Row="3">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -191,10 +191,10 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="5">
+        <GroupBox Grid.Row="4">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -242,10 +242,10 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="6">
+        <GroupBox Grid.Row="5">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -293,10 +293,10 @@
             </Grid>
         </GroupBox>
 
-        <GroupBox Grid.Row="7">
+        <GroupBox Grid.Row="6">
             <GroupBox.Header>
                 <RadioButton
-                    Content="AutoPlay until here."
+                    Content="{StaticResource PlayHeader}"
                     IsChecked="{Binding IsChecked}"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
@@ -394,17 +394,18 @@
                     Grid.Row="5"
                     Grid.Column="0"
                     CommandParameter="{Binding SampleType}"
-                    Command="{Binding ClasifyCommand}"
-                    Content="Clasify&gt;&gt;"
+                    Command="{Binding ClassifyCommand}"
+                    Content="Classify&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
                 <TextBlock
                     Grid.Row="5"
                     Grid.Column="1"
-                    Text="{Binding ClasifyTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+                    Text="{Binding ClassifyTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
 
 
             </Grid>
         </GroupBox>
+
     </Grid>
 
 </UserControl>

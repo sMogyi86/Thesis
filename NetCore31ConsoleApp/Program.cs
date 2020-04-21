@@ -9,21 +9,74 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BitMiracle.LibTiff.Classic;
 
 namespace SandBoxConsoleApp
 {
     class Program
     {
-        private readonly static string _b40Path = @"D:\Segment\L5188027_02720060719_B40.TIF";
-        private readonly static string _b30Path = @"D:\Segment\L5188027_02720060719_B30.TIF";
-        private readonly static string _b20Path = @"D:\Segment\L5188027_02720060719_B20.TIF";
-        private readonly static Project PROJECT = Project.Instance;
+        private readonly static string _imageName = @"D:\MyDocs\SkyDrive\MogyiSharePublic\Results\class.tif";
+        //private readonly static string _imageName = @"D:\Segment\L5188027_02720060719_B30.TIF";
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            Testing();
+            var tiffTagValues = GetTagValues(_imageName);
 
-            //Console.ReadKey();
+            foreach (var tag in tiffTagValues)
+            {
+                if (tag.Value != null)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine(tag.Key);
+
+                    foreach (var value in tag.Value)
+                    {
+                        var typ = value.Value.GetType();
+                        Console.WriteLine($"Type: {typ}");
+
+                        var obj = value.Value;
+                        if (obj is IEnumerable)
+                        {
+                            var enumerable = (IEnumerable)obj;
+                            int c = 0;
+                            foreach (var item in enumerable)
+                            {
+                                c++;
+                                //Console.WriteLine(item);
+                            }
+                            Console.WriteLine($"Count: {c}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Value: {obj}");
+                        }
+
+                    }
+                }
+            }
+        }
+
+        public static IReadOnlyDictionary<TiffTag, FieldValue[]> GetTagValues(string imageName)
+        {
+            var tiff = Tiff.Open(imageName, "r");
+
+            Dictionary<TiffTag, FieldValue[]> tiffTagValues = new Dictionary<TiffTag, FieldValue[]>();
+
+            Console.WriteLine(tiff.NumberOfDirectories()); 
+
+            tiff.WriteDirectory
+
+            do
+            {
+                foreach (TiffTag tiffTag in System.Enum.GetValues(typeof(TiffTag)).Cast<TiffTag>())
+                {
+                    tiffTagValues[tiffTag] = tiff.GetField(tiffTag);
+                }
+            } while (tiff.ReadDirectory());
+
+            
+
+            return tiffTagValues;
         }
 
         private static void Testing()
@@ -53,7 +106,7 @@ namespace SandBoxConsoleApp
             int byteVectorCount = Vector<byte>.Count;
             int shortVectorcount = Vector<short>.Count;
             int ushortVectorCount = Vector<ushort>.Count;
-            
+
             short[] a = new short[shortVectorcount];
             short[] b = new short[shortVectorcount];
             for (int i = 0; i < 3; i++)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MARGO.BL.Img;
+using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -7,13 +8,24 @@ namespace MARGO.Common
 {
     public class IntColorConverter : IValueConverter
     {
+        private readonly ColorBuilder cb = new ColorBuilder();
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is int argb)
             {
-                var bytes = BitConverter.GetBytes(argb);
-
-                return Color.FromArgb(bytes[0], bytes[1], bytes[2], bytes[3]);
+                Color color;
+                if (BitConverter.IsLittleEndian)
+                    color = Color.FromArgb(cb.AFromLITTLEEndian(argb),
+                                       cb.RFromLITTLEEndian(argb),
+                                       cb.GFromLITTLEEndian(argb),
+                                       cb.BFromLITTLEEndian(argb));
+                else
+                    color = Color.FromArgb(cb.AFromBIGEndian(argb),
+                                       cb.RFromBIGEndian(argb),
+                                       cb.GFromBIGEndian(argb),
+                                       cb.BFromBIGEndian(argb));
+                return color;
             }
 
             return Color.FromArgb(byte.MaxValue, byte.MinValue, byte.MinValue, byte.MinValue);
@@ -21,14 +33,14 @@ namespace MARGO.Common
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            int argb = int.MinValue;
+            int argb = 0;
 
             if (value is Color color)
             {
                 if (BitConverter.IsLittleEndian)
-                    argb = BitConverter.ToInt32(stackalloc byte[4] { color.A, color.R, color.G, color.B });
+                    argb = cb.ConstructLITTLEEndian(color.A, color.R, color.G, color.B);
                 else
-                    argb = BitConverter.ToInt32(stackalloc byte[4] { color.B, color.G, color.R, color.A, });
+                    argb = cb.ConstructBIGEndian(color.A, color.R, color.G, color.B);
             }
 
             return argb;

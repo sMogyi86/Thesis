@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ZoomAndPan
@@ -417,6 +418,16 @@ namespace ZoomAndPan
         public static readonly DependencyProperty ViewportZoomFocusYProperty = DependencyProperty.Register("ViewportZoomFocusY",
             typeof(double), typeof(ZoomAndPanControl), new FrameworkPropertyMetadata(0.0));
 
+        /// <summary>
+        /// The MouseButton to handle drag events.
+        /// </summary>
+        public MouseButton PanMouseButton
+        {
+            get { return (MouseButton)GetValue(PanMouseButtonProperty); }
+            set { SetValue(PanMouseButtonProperty, value); }
+        }
+        public static readonly DependencyProperty PanMouseButtonProperty = DependencyProperty.Register(nameof(PanMouseButton), typeof(MouseButton), typeof(ZoomAndPanControl));
+
         #endregion Dependency Property Definitions
 
         #region events
@@ -760,7 +771,7 @@ namespace ZoomAndPan
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private enum CurrentZoomTypeEnum { Fill, Fit, Other}
+        private enum CurrentZoomTypeEnum { Fill, Fit, Other }
 
         private CurrentZoomTypeEnum _currentZoomTypeEnum;
 
