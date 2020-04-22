@@ -1,15 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MARGO.Common;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace MARGO.Controls
 {
@@ -21,6 +12,14 @@ namespace MARGO.Controls
         public ControlPanel()
         {
             InitializeComponent();
+        }
+
+        private void RadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is RadioButton rb
+                && rb.Tag is Step lastStepInGroup
+                && this.DataContext is IHaveScript viewModel)
+                viewModel.SetLastStep(lastStepInGroup);
         }
     }
 }

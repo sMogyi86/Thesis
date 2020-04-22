@@ -25,6 +25,13 @@ namespace MARGO.ViewModels
             myCalcIndex = calcIndex;
         }
 
+        internal SampleGroupVM(string name, int color, Func<Point, int> calcIndex, IEnumerable<Point> points)
+            : this(name, color, calcIndex)
+        {
+            foreach (var point in points)
+                myPoints.Add(point);
+        }
+
         public void AddPoint(Point? point)
         {
             if (point.HasValue && !myPoints.Contains(point.Value))

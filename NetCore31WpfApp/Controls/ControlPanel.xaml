@@ -5,6 +5,7 @@
     xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
     xmlns:img="clr-namespace:MARGO.BL.Img;assembly=MARGO.BL"
     xmlns:common="clr-namespace:MARGO.Common"
+    xmlns:mrg="clr-namespace:MARGO"
     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <UserControl.Resources>
@@ -40,37 +41,62 @@
         <GroupBox Grid.Row="0">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Load}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
-            <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Button
-                        Command="{Binding LoadCommand}"
-                        Content="Load&gt;&gt;"
-                        Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Text="{Binding LoadTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <Label Content="Párhúzamos szálak" />
-                    <TextBox Text="{Binding LevelOfParallelism, UpdateSourceTrigger=PropertyChanged}" />
-                </StackPanel>
-                <StackPanel>
-                    <Button
-                        Command="{Binding AutoPlayCommand}"
-                        Content="AutoPlay&gt;&gt;"
-                        Style="{StaticResource ButtonStyle}" />
-                    <TextBlock Text="{Binding AutoPlayTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
-                </StackPanel>
-            </StackPanel>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition />
+                    <RowDefinition />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+
+                <Button
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Command="{Binding LoadCommand}"
+                    Content="Load&gt;&gt;"
+                    Style="{StaticResource ButtonStyle}" />
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Text="{Binding LoadTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+
+                <Label
+                    Grid.Row="1"
+                    Grid.Column="0"
+                    Content="Concurrent threads:" />
+                <TextBox
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Text="{Binding LevelOfParallelism, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Command="{Binding AutoPlayCommand}"
+                    Content="AutoPlay&gt;&gt;"
+                    Style="{StaticResource ButtonStyle}" />
+                <!--<TextBlock
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Text="{Binding AutoPlayTime, StringFormat={StaticResource ElapsedTimeFormat}}" />-->
+
+            </Grid>
         </GroupBox>
 
         <GroupBox Grid.Row="1">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Compose}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
             <StackPanel>
@@ -93,8 +119,9 @@
         <GroupBox Grid.Row="2">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Cut}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
             <Grid>
@@ -139,6 +166,7 @@
                 <Button
                     Grid.Row="2"
                     Grid.Column="0"
+                    CommandParameter="{Binding WorkspacePrefix}"
                     Command="{Binding CutCommand}"
                     Content="Cut&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
@@ -152,8 +180,9 @@
         <GroupBox Grid.Row="3">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Variants}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
             <Grid>
@@ -194,8 +223,9 @@
         <GroupBox Grid.Row="4">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Minimas}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
             <Grid>
@@ -245,8 +275,9 @@
         <GroupBox Grid.Row="5">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Flood}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
             <Grid>
@@ -296,8 +327,9 @@
         <GroupBox Grid.Row="6">
             <GroupBox.Header>
                 <RadioButton
+                    Tag="{x:Static mrg:Step.Classify}"
                     Content="{StaticResource PlayHeader}"
-                    IsChecked="{Binding IsChecked}"
+                    Checked="RadioButton_Checked"
                     GroupName="AutoPlay" />
             </GroupBox.Header>
             <Grid>

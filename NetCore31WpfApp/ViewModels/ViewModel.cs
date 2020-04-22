@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,7 +16,7 @@ using System.Windows.Media.Imaging;
 
 namespace MARGO.ViewModels
 {
-    class ViewModel : ObservableBase, IUIHelper
+    class ViewModel : ObservableBase, IUIHelper, IHaveScript
     {
         #region Services
         private readonly IImageFactory myImageFactory = MyServices.GetImageFactory();
@@ -24,10 +25,96 @@ namespace MARGO.ViewModels
 
 
 
+        private readonly Script myScript;
+        public ViewModel()
+        {
+            myScript = new Script(new Dictionary<Step, Action>()
+            {
+                {Step.Load,
+                    async ()=> {
+                        StartBusy();
+                        string laodPath;
+#if DEBUG
+                        laodPath = @"D:\Segment\";
+#else
+                        laodPath = this.GetType().Assembly.Location;
+#endif
+                        await Load(new DirectoryInfo(laodPath).EnumerateFiles("*.TIF").Select(fi => fi.FullName));
+                        LoadTime = EndBusy();
+                    } },
+                {Step.Compose,
+                    ()=> {
+                        Red = Project.Layers.FirstOrDefault(l => l.ID.Contains("B40"));
+                        Green= Project.Layers.FirstOrDefault(l => l.ID.Contains("B30"));
+                        Blue= Project.Layers.FirstOrDefault(l => l.ID.Contains("B20"));
+                        //ComposeCommand.Execute(null);
+                        IsBusy = true; IsBusy = false;
+                    } },
+                {Step.Cut, () => CutCommand.Execute(WorkspacePrefix)},
+                {Step.Variants, ()=> VariantsCommand.Execute(VariantsRange)},
+                {Step.Minimas, ()=> MinimasCommand.Execute(MinimasRange)},
+                {Step.Flood,
+                    async ()=> {
+                        StartBusy();
+                        await Project.FloodAsync();
+                        FloodTime = myStopwatch.Elapsed;
+
+                        myStopwatch.Restart();
+                        await Project.CreateSampleLayersAsync(SampleType, SampleType.ToString());
+
+                        this.ChangeFreshMap();
+                        this.RaisePropertyChanged(nameof(Layers));
+                        SampleTime = EndBusy();
+                    } },
+                {Step.Classify,
+                    ()=> {
+                        var groups = new SampleGroupVM[]
+                        {
+                            new SampleGroupVM("viz", 0x00325aa8, CalcIndex, new Point[]
+                            {
+                                new Point(200, 3840),
+                                new Point(430, 3800)
+                            }),
+                            new SampleGroupVM("talaj", 0x00a8a032, CalcIndex, new Point[]
+                            {
+                                new Point(1100, 3750),
+                                new Point(1120, 3650)
+                            }),
+                            new SampleGroupVM("növeny", 0x00a83232, CalcIndex, new Point[]
+                            {
+                                new Point(1100, 3650),
+                                new Point(1090, 3610)
+                            }),
+                            new SampleGroupVM("telepules", 0x00575656, CalcIndex, new Point[]
+                            {
+                                new Point(2975, 1900),
+                                new Point(2990, 1935)
+                            })
+                        };
+
+                        foreach (var grp in groups)
+                            Groups.Add(grp);
+
+                        ClassifyCommand.Execute(SampleType);
+                    } },
+            });
+
+            this.PropertyChanged +=
+                (sender, e) =>
+                {
+                    if (e.PropertyName == nameof(IsBusy) && !IsBusy)
+                        myScript.DoNextStep();
+                };
+        }
+        public void SetLastStep(Step step) => myScript.SetLastStep(step);
+
+
+
         private readonly Stopwatch myStopwatch = new Stopwatch();
         private Project Project => Project.Instance;
         public bool IsBusy { get; set; } = false;
         public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
+        public ICommand AutoPlayCommand => new DelegateCommand(() => myScript.StartToPlay());
 
 
 
@@ -37,17 +124,21 @@ namespace MARGO.ViewModels
             {
                 var ids = myUIServices.GetLayerFiles();
 
-                if (ids.Any())
-                {
-                    StartBusy();
-                    // https://stackoverflow.com/questions/54594297/wrapping-slow-synchronous-i-o-for-asynchronous-ui-consumption
-                    await Task.Run(() => { Project.Load(ids); });
-
-                    this.RaisePropertyChanged(nameof(Layers));
-                    this.RaisePropertyChanged(nameof(CutCommand));
-                }
+                StartBusy();
+                await Load(ids);
             })
         { Finaly = () => LoadTime = EndBusy() };
+        private async Task Load(IEnumerable<string> ids)
+        {
+            if (ids.Any())
+            {
+                // https://stackoverflow.com/questions/54594297/wrapping-slow-synchronous-i-o-for-asynchronous-ui-consumption
+                await Task.Run(() => { Project.Load(ids); });
+
+                this.RaisePropertyChanged(nameof(Layers));
+                this.RaisePropertyChanged(nameof(CutCommand));
+            }
+        }
         public TimeSpan LoadTime { get; set; }
 
 
@@ -77,7 +168,7 @@ namespace MARGO.ViewModels
         private Point? BottomRightPoint { get; set; } = new Point(6300, 5800);
         public double? BottomRightX => BottomRightPoint?.X;
         public double? BottomRightY => BottomRightPoint?.Y;
-        public string CutNamePrefix { get; set; }
+        public string WorkspacePrefix { get; set; } = string.Empty;
         public ICommand CutCommand => new DelegateCommandAsync<string>(
             async (prefix) =>
             {
@@ -145,7 +236,7 @@ namespace MARGO.ViewModels
             async (smapleType) =>
             {
                 StartBusy();
-                await Project.CreateSampleLayersAsync(smapleType, SampleType.ToString());
+                await Project.CreateSampleLayersAsync(smapleType, smapleType.ToString());
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
@@ -227,7 +318,7 @@ namespace MARGO.ViewModels
         public ICommand CreateGroupCommand => new DelegateCommand(
             () =>
             {
-                Groups.Add(new SampleGroupVM(CurrentName, CurrentColor, p => currentMap.Parts.Width * (int)p.Y + (int)p.X));
+                Groups.Add(new SampleGroupVM(CurrentName, CurrentColor, CalcIndex));
                 CurrentColor = 0;
                 CurrentName = string.Empty;
             },
@@ -285,6 +376,9 @@ namespace MARGO.ViewModels
 
             this.RaisePropertyChanged(nameof(SaveMapCommand));
         }
+
+        private int CalcIndex(Point p)
+            => currentMap.Parts.Width * (int)p.Y + (int)p.X;
 
         private void StartBusy()
         {

@@ -16,8 +16,8 @@ namespace MARGO.BL.Graph
 
     internal class PrimsMST : IMST
     {
-        private readonly List<int[]> myReachables = new List<int[]>();
-        private readonly List<int> myItems = new List<int>();
+        private readonly List<int[]> myReachables = new List<int[]>(); // LinkedList
+        private readonly ICollection<int> myItems = new List<int>();
         private readonly ReadOnlyMemory<byte> myValueField;
         private bool myCanStep = true;
         private int myLastCoupledIdx;

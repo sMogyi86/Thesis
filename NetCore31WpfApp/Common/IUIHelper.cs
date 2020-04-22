@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace MARGO.Common
@@ -7,5 +8,10 @@ namespace MARGO.Common
     {
         Action<Point?> Handle { get; }
         //void TimerElapsedAt(Point? point);
+    }
+
+    interface IHaveScript
+    {
+        void SetLastStep(Step step);
     }
 }
