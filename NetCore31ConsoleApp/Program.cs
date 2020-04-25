@@ -20,6 +20,11 @@ namespace SandBoxConsoleApp
 
         static void Main(string[] args)
         {
+           
+        }
+
+        public static void TagTest()
+        {
             var tiffTagValues = GetTagValues(_imageName);
 
             foreach (var tag in tiffTagValues)
@@ -62,9 +67,9 @@ namespace SandBoxConsoleApp
 
             Dictionary<TiffTag, FieldValue[]> tiffTagValues = new Dictionary<TiffTag, FieldValue[]>();
 
-            Console.WriteLine(tiff.NumberOfDirectories()); 
+            Console.WriteLine(tiff.NumberOfDirectories());
 
-            tiff.WriteDirectory
+            tiff.WriteDirectory();
 
             do
             {

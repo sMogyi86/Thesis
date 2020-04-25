@@ -9,17 +9,17 @@ namespace MARGO.BL.Segment
 {
     public interface IClassifier
     {
-        IReadOnlyDictionary<int, byte[]> CreateCategorySamples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> stats);
+        IReadOnlyDictionary<uint, byte[]> CreateCategorySamples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> stats);
         void CreateSample(SampleType sType, IEnumerable<int> segment, IEnumerable<ISegmentStats> stats, Span<byte> sampleVector);
-        int Classify(Span<short> segmentSample);
-        (IReadOnlyDictionary<int, byte> CategoryMapping, IReadOnlyDictionary<byte, int> ColorMapping) CreateMappings(IEnumerable<int> categories);
+        uint Classify(Span<short> segmentSample);
+        (IReadOnlyDictionary<uint, byte> CategoryMapping, IReadOnlyDictionary<byte, uint> ColorMapping) CreateMappings(IEnumerable<uint> categories);
     }
 
     internal abstract class Classifier : IClassifier
     {
-        public IReadOnlyDictionary<int, byte[]> CreateCategorySamples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> segmentStats)
+        public IReadOnlyDictionary<uint, byte[]> CreateCategorySamples(SampleType sType, IEnumerable<ISampleGroup> samples, IEnumerable<IEnumerable<int>> segments, IEnumerable<ISegmentStats> segmentStats)
         {
-            var categorySamples = new Dictionary<int, byte[]>(samples.Count());
+            var categorySamples = new Dictionary<uint, byte[]>(samples.Count());
 
             var sampleSegments = SegmentsFromIndexes(samples, segments);
 
@@ -32,9 +32,9 @@ namespace MARGO.BL.Segment
 
             return categorySamples;
         }
-        private IReadOnlyDictionary<int, IEnumerable<int>> SegmentsFromIndexes(IEnumerable<ISampleGroup> categorySamples, IEnumerable<IEnumerable<int>> segments)
+        private IReadOnlyDictionary<uint, IEnumerable<int>> SegmentsFromIndexes(IEnumerable<ISampleGroup> categorySamples, IEnumerable<IEnumerable<int>> segments)
         {
-            var sampleSegments = new Dictionary<int, IEnumerable<int>>(categorySamples.Count());
+            var sampleSegments = new Dictionary<uint, IEnumerable<int>>(categorySamples.Count());
 
             foreach (var categorySample in categorySamples)
             {
@@ -57,37 +57,37 @@ namespace MARGO.BL.Segment
             }
         }
 
-        public (IReadOnlyDictionary<int, byte> CategoryMapping, IReadOnlyDictionary<byte, int> ColorMapping) CreateMappings(IEnumerable<int> categories)
+        public (IReadOnlyDictionary<uint, byte> CategoryMapping, IReadOnlyDictionary<byte, uint> ColorMapping) CreateMappings(IEnumerable<uint> categories)
         {
             int categoriesCount;
-            if ((categoriesCount = categories.Count()) > byte.MaxValue + 1)
+            if ((categoriesCount = categories.Count()) > byte.MaxValue)
                 throw new NotSupportedException();
 
-            var categoryMapping = new Dictionary<int, byte>(categories.Count());
-            var colorMapping = new Dictionary<byte, int>(categories.Count());
+            var categoryMapping = new Dictionary<uint, byte>(categories.Count());
+            var colorMapping = new Dictionary<byte, uint>(categories.Count());
 
-            byte d = (byte)(byte.MaxValue / (byte)categoriesCount);
+            //byte d = (byte)(byte.MaxValue / (byte)categoriesCount);
             byte c = 0;
             foreach (var category in categories)
             {
                 categoryMapping[category] = c;
                 colorMapping[c] = category;
-                c += d;
+                c++;
             }
 
             return (categoryMapping, colorMapping);
         }
 
-        public abstract int Classify(Span<short> segmentSample);
+        public abstract uint Classify(Span<short> segmentSample);
     }
 
 
     internal class MinDistClassifier : Classifier
     {
-        private static IReadOnlyDictionary<int, Memory<short>> CATEGORY_SAMPLES;
-        public static void Initialize(IReadOnlyDictionary<int, byte[]> categorySmaples)
+        private static IReadOnlyDictionary<uint, Memory<short>> CATEGORY_SAMPLES;
+        public static void Initialize(IReadOnlyDictionary<uint, byte[]> categorySmaples)
         {
-            var csTmp = new Dictionary<int, Memory<short>>(categorySmaples.Count);
+            var csTmp = new Dictionary<uint, Memory<short>>(categorySmaples.Count);
 
             int l = categorySmaples.First().Value.Length;
             Span<short> buffer = stackalloc short[Vector<short>.Count];
@@ -103,10 +103,10 @@ namespace MARGO.BL.Segment
             CATEGORY_SAMPLES = csTmp;
         }
 
-        public override int Classify(Span<short> segmentSample)
+        public override uint Classify(Span<short> segmentSample)
         {
             double minDist = double.MaxValue;
-            int categoryID = 0;
+            uint categoryID = 0;
 
             double d;
             foreach (var category in CATEGORY_SAMPLES)

@@ -131,7 +131,7 @@ namespace MARGO.BL.Img
                 {
                     for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
                     {
-                        int argb = mapping[chanel[rowIndex * parts.Width + pixelIndex]];
+                        uint argb = mapping[chanel[rowIndex * parts.Width + pixelIndex]];
 
                         rowData[pixelIndex * samplesPerPixel + 0] = cb.RFromLITTLEEndian(argb);
                         rowData[pixelIndex * samplesPerPixel + 1] = cb.GFromLITTLEEndian(argb);
@@ -148,7 +148,7 @@ namespace MARGO.BL.Img
                 {
                     for (int pixelIndex = 0; pixelIndex < parts.Width; pixelIndex++)
                     {
-                        int argb = mapping[chanel[rowIndex * parts.Width + pixelIndex]];
+                        uint argb = mapping[chanel[rowIndex * parts.Width + pixelIndex]];
 
                         rowData[pixelIndex * samplesPerPixel + 0] = cb.RFromBIGEndian(argb);
                         rowData[pixelIndex * samplesPerPixel + 1] = cb.GFromBIGEndian(argb);

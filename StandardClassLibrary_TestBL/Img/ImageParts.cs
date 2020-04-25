@@ -16,7 +16,7 @@ namespace MARGO.BL.Img
         public int Width { get; }
         public int Height { get; }
         public IReadOnlyDictionary<char, ReadOnlyMemory<byte>> Chanels { get; private set; }
-        internal IReadOnlyDictionary<byte, int> ColorMapping { get; private set; }
+        internal IReadOnlyDictionary<byte, uint> ColorMapping { get; private set; }
 
         private ImageParts(int width, int height, Plan plan)
         {
@@ -42,7 +42,7 @@ namespace MARGO.BL.Img
             };
         }
 
-        public ImageParts(int width, int height, ReadOnlyMemory<byte> chanel, IReadOnlyDictionary<byte, int> colorMapping)
+        public ImageParts(int width, int height, ReadOnlyMemory<byte> chanel, IReadOnlyDictionary<byte, uint> colorMapping)
             : this(width, height, Plan.Mapping)
         {
             Chanels = new Dictionary<char, ReadOnlyMemory<byte>>() { { 'C', chanel } };

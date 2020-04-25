@@ -45,8 +45,8 @@ namespace MARGO.ViewModels
                 {Step.Compose,
                     ()=> {
                         Red = Project.Layers.FirstOrDefault(l => l.ID.Contains("B40"));
-                        Green= Project.Layers.FirstOrDefault(l => l.ID.Contains("B30"));
-                        Blue= Project.Layers.FirstOrDefault(l => l.ID.Contains("B20"));
+                        Green= Project.Layers.FirstOrDefault(l => l.ID.Contains("B50"));
+                        Blue= Project.Layers.FirstOrDefault(l => l.ID.Contains("B30"));
                         //ComposeCommand.Execute(null);
                         IsBusy = true; IsBusy = false;
                     } },
@@ -70,25 +70,64 @@ namespace MARGO.ViewModels
                     ()=> {
                         var groups = new SampleGroupVM[]
                         {
-                            new SampleGroupVM("viz", 0x00325aa8, CalcIndex, new Point[]
+                            new SampleGroupVM("viz1", 0xFF1E90FF, CalcIndex, new Point[]
                             {
-                                new Point(200, 3840),
-                                new Point(430, 3800)
+                                new Point(132,3946),
+                                new Point(334,3711),
+                                new Point(490,3796),
+                                new Point(346,3903)
                             }),
-                            new SampleGroupVM("talaj", 0x00a8a032, CalcIndex, new Point[]
+                            new SampleGroupVM("viz2", 0xFF000080, CalcIndex, new Point[]
                             {
-                                new Point(1100, 3750),
-                                new Point(1120, 3650)
+                                new Point(1809,2955),
+                                new Point(1507,2773),
+                                new Point(906,2654),
+                                new Point(1161,1353)
                             }),
-                            new SampleGroupVM("növeny", 0x00a83232, CalcIndex, new Point[]
+                            new SampleGroupVM("erdo1", 0xFFA52A2A, CalcIndex, new Point[]
                             {
-                                new Point(1100, 3650),
-                                new Point(1090, 3610)
+                                new Point(2842,1090),
+                                new Point(2479,1333)
                             }),
-                            new SampleGroupVM("telepules", 0x00575656, CalcIndex, new Point[]
+                            new SampleGroupVM("erdo2", 0xFFB22222, CalcIndex, new Point[]
                             {
-                                new Point(2975, 1900),
-                                new Point(2990, 1935)
+                                new Point(1202,2213),
+                                new Point(956,2279)
+                            }),
+                            new SampleGroupVM("veg1", 0xFFFFA500, CalcIndex, new Point[]
+                            {
+                                new Point(1443,3179),
+                                new Point(1558,2504),
+                                new Point(2147,3074)
+                            }),
+                            new SampleGroupVM("veg2", 0xFFFF4500, CalcIndex, new Point[]
+                            {
+                                new Point(1641,2346),
+                                new Point(2218,1775),
+                                new Point(1098,3902)
+                            }),
+                            new SampleGroupVM("tal1", 0xFF66CDAA, CalcIndex, new Point[]
+                            {
+                                new Point(2251,3118),
+                                new Point(766,3397),
+                                new Point(1998,1895)
+                            }),
+                            new SampleGroupVM("tal2", 0xFF2E8B57, CalcIndex, new Point[]
+                            {
+                                new Point(1875,1742),
+                                new Point(1620,2245),
+                                new Point(2043,2648)
+                            }),
+                            new SampleGroupVM("legelo", 0xFFF5DEB3, CalcIndex, new Point[]
+                            {
+                                new Point(1528,3258),
+                                new Point(1672,3232)
+                            }),
+                            new SampleGroupVM("telep", 0xFFA9A9A9, CalcIndex, new Point[]
+                            {
+                                new Point(2968,1896),
+                                new Point(3000,1909),
+                                new Point(2966,1941)
                             })
                         };
 
@@ -313,7 +352,7 @@ namespace MARGO.ViewModels
         public ICommand ResetClickHandlerCommand => new DelegateCommand(() => Handle = null);
 
 
-        public int CurrentColor { get; set; }
+        public uint CurrentColor { get; set; }
         public string CurrentName { get; set; }
         public ICommand CreateGroupCommand => new DelegateCommand(
             () =>
@@ -359,7 +398,13 @@ namespace MARGO.ViewModels
                 Maps.Add(myImageFactory.CreateImage($"{nameof(Project.CLASSIFIEDIMAGE)}_COLORED", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE, Project.ColorMapping)));
             },
             _ => Groups.Any())
-        { Finaly = () => ClassifyTime = EndBusy() };
+                            {
+                                Finaly = () =>
+                                {
+                                    ClassifyTime = EndBusy();
+                                    RaiseForAll();
+                                }
+                            };
         public TimeSpan ClassifyTime { get; set; }
 
 

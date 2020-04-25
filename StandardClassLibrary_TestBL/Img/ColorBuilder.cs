@@ -5,9 +5,9 @@ namespace MARGO.BL.Img
     public class ColorBuilder
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int ConstructLITTLEEndian(byte a, byte r, byte g, byte b)
+        public uint ConstructLITTLEEndian(byte a, byte r, byte g, byte b)
         {
-            int argb = 0;
+            uint argb = 0;
 
             argb |= a;
             argb = (argb << 8);
@@ -21,9 +21,9 @@ namespace MARGO.BL.Img
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int ConstructBIGEndian(byte a, byte r, byte g, byte b)
+        public uint ConstructBIGEndian(byte a, byte r, byte g, byte b)
         {
-            int argb = 0;
+            uint argb = 0;
 
             argb |= b;
             argb = (argb << 8);
@@ -39,28 +39,28 @@ namespace MARGO.BL.Img
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte AFromLITTLEEndian(int argb) => (byte)(argb >> 24);
+        public byte AFromLITTLEEndian(uint argb) => (byte)(argb >> 24);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte RFromLITTLEEndian(int argb) => (byte)(argb >> 16);
+        public byte RFromLITTLEEndian(uint argb) => (byte)(argb >> 16);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte GFromLITTLEEndian(int argb) => (byte)(argb >> 8);
+        public byte GFromLITTLEEndian(uint argb) => (byte)(argb >> 8);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte BFromLITTLEEndian(int argb) => (byte)argb;
+        public byte BFromLITTLEEndian(uint argb) => (byte)argb;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte AFromBIGEndian(int argb) => (byte)argb;
+        public byte AFromBIGEndian(uint argb) => (byte)argb;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte RFromBIGEndian(int argb) => (byte)(argb >> 8);
+        public byte RFromBIGEndian(uint argb) => (byte)(argb >> 8);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte GFromBIGEndian(int argb) => (byte)(argb >> 16);
+        public byte GFromBIGEndian(uint argb) => (byte)(argb >> 16);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public byte BFromBIGEndian(int argb) => (byte)(argb >> 24);
+        public byte BFromBIGEndian(uint argb) => (byte)(argb >> 24);
     }
 }

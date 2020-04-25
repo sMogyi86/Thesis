@@ -12,7 +12,7 @@ namespace MARGO.Common
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is int argb)
+            if (value is uint argb)
             {
                 Color color;
                 if (BitConverter.IsLittleEndian)
@@ -33,7 +33,7 @@ namespace MARGO.Common
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            int argb = 0;
+            uint argb = 0;
 
             if (value is Color color)
             {

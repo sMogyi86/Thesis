@@ -12,20 +12,20 @@ namespace MARGO.ViewModels
         private readonly Func<Point, int> myCalcIndex;
 
         public string Name { get; }
-        public int Color { get; }
+        public uint Color { get; }
         public int Count => myPoints.Count;
 
-        public int ID => Color;
+        public uint ID => Color;
         public IEnumerable<int> Indexes => myPoints.Select(p => myCalcIndex(p));
 
-        public SampleGroupVM(string name, int color, Func<Point, int> calcIndex)
+        public SampleGroupVM(string name, uint color, Func<Point, int> calcIndex)
         {
             Name = name;
             Color = color;
             myCalcIndex = calcIndex;
         }
 
-        internal SampleGroupVM(string name, int color, Func<Point, int> calcIndex, IEnumerable<Point> points)
+        internal SampleGroupVM(string name, uint color, Func<Point, int> calcIndex, IEnumerable<Point> points)
             : this(name, color, calcIndex)
         {
             foreach (var point in points)

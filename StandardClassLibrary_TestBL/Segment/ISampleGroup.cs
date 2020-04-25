@@ -4,7 +4,7 @@ namespace MARGO.BL.Segment
 {
     public interface ISampleGroup
     {
-        int ID { get; }
+        uint ID { get; }
         IEnumerable<int> Indexes { get; }
     }
 }
