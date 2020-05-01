@@ -122,13 +122,13 @@ namespace MARGO.ViewModels
                             {
                                 new Point(1528,3258),
                                 new Point(1672,3232)
-                            }),
-                            new SampleGroupVM("telep", 0xFFA9A9A9, CalcIndex, new Point[]
-                            {
-                                new Point(2968,1896),
-                                new Point(3000,1909),
-                                new Point(2966,1941)
                             })
+                            //new SampleGroupVM("telep", 0xFFA9A9A9, CalcIndex, new Point[]
+                            //{
+                            //    new Point(2968,1896),
+                            //    new Point(3000,1909),
+                            //    new Point(2966,1941)
+                            //})
                         };
 
                         foreach (var grp in groups)

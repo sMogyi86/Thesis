@@ -25,7 +25,7 @@ namespace MARGO.Common
 
         public void Handle(Exception exception)
         {
-            if (MessageBox.Show($"[{exception.Message}]\nKívánja a hiba technikai részleteit a vágólapra másolni?", "Váratlan hiba történt!", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No) == MessageBoxResult.Yes)
+            if (MessageBox.Show($"[{exception.Message}]\n\nKívánja a hiba technikai részleteit a vágólapra másolni?", "Váratlan hiba történt!", MessageBoxButton.YesNo, MessageBoxImage.Error, MessageBoxResult.No) == MessageBoxResult.Yes)
                 myDispatcher.Invoke(() => this.CopyToClipBoard(exception));
 
             if (this.Throws)

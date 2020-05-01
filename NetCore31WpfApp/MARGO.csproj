@@ -9,6 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="somemap.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="somemap.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="3.8.1" />
     <PackageReference Include="PropertyChanged.Fody" Version="3.2.1" />
   </ItemGroup>

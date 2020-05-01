@@ -20,10 +20,15 @@
             ZoomAndPanInitialPosition="FitScreen"
             MouseLeftButtonUp="myZoomAndPanControl_MouseLeftButtonUp"
             MouseMove="myZoomAndPanControl_MouseMove">
-            <Image
-                Name="Image"
-                RenderOptions.BitmapScalingMode="NearestNeighbor"
-                Source="{Binding ImageSource, Mode=OneWay}" />
+            <Image Name="Image" RenderOptions.BitmapScalingMode="NearestNeighbor">
+                <Image.Source>
+                    <Binding Path="ImageSource" Mode="OneWay">
+                        <Binding.TargetNullValue>
+                            <ImageSource>/MARGO;component/somemap.jpg</ImageSource>
+                        </Binding.TargetNullValue>
+                    </Binding>
+                </Image.Source>
+            </Image>
         </zoomAndPan:ZoomAndPanControl>
 
         <ComboBox
