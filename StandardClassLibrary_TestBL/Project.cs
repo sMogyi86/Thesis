@@ -4,6 +4,7 @@ using MARGO.BL.Segment;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -24,6 +25,7 @@ namespace MARGO.BL
         private IDictionary<string, RasterLayer> myOriginalLayers = new Dictionary<string, RasterLayer>();
         private IDictionary<string, RasterLayer> myCutedLayers = new ConcurrentDictionary<string, RasterLayer>();
         private IDictionary<string, RasterLayer> mySampleLayers = new Dictionary<string, RasterLayer>();
+        private string TimeStamp => DateTime.Now.ToString("hmmss", CultureInfo.InvariantCulture);
         public IEnumerable<RasterLayer> Layers => myOriginalLayers.Values
                                             .Concat(myCutedLayers.Values)
                                             .Concat(mySampleLayers.Values);
@@ -58,10 +60,12 @@ namespace MARGO.BL
 
         public async Task Cut(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string prefix)
         {
+            string now = TimeStamp;
+
             await myRunner.ScheduleAsync(myOriginalLayers.Values, LevelOfParallelism,
                 layer =>
                 {
-                    var clID = $"{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.Cut) : prefix)}_{layer.ID}";
+                    var clID = $"{now}_{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.Cut) : prefix)}_{layer.ID}";
                     myCutedLayers[clID] = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY, clID);
                 }).ConfigureAwait(false);
         }
@@ -121,17 +125,29 @@ namespace MARGO.BL
         public bool CanFlood => myMinimasIdxs.Any();
         public async Task FloodAsync()
         {
-            int minimaCount = myMinimasIdxs.Count();
-
-            if (LevelOfParallelism > 1)
-                FieldsSemaphore.Initialize(LOGGED.Memory.Length);
-            else
-                FieldsSemaphore.Initialize(-1);
-
             PrimsMST.Initalize(LOGGED.Width);
 
+            IEnumerable<IMST> segments;
+            if (LevelOfParallelism == 1)
+            {
+                FieldsSemaphore.Initialize(LOGGED.Memory.Length, false);
+                segments = await this.FloodAsyncST().ConfigureAwait(false);
+            }
+            else
+            {
+                FieldsSemaphore.Initialize(LOGGED.Memory.Length, true);
+                segments = await this.FloodAsyncMT().ConfigureAwait(false);
+            }
+
+            mySegments = segments;
+        }
+
+        private async Task<IEnumerable<IMST>> FloodAsyncMT()
+        {
+            int minimaCount = myMinimasIdxs.Count();
+
             // Create seeds
-            var resultsSeeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
+            var seeds = await myRunner.PerformAsync(minimaCount, LevelOfParallelism,
                                     (start, length) =>
                                     {
                                         var listSeeds = new List<IMST>(length);
@@ -143,20 +159,72 @@ namespace MARGO.BL
                                     }).ConfigureAwait(false);
 
             // Flood
-            await myRunner.ScheduleAsync(resultsSeeds,
+            await myRunner.ScheduleAsync(seeds,
                                     LevelOfParallelism,
-                                    listSeeds => myProcessingFunctions.Flood(listSeeds))
+                                    seedsPatrLst =>
+                                    {
+                                        do
+                                        {
+                                            foreach (var mst in seedsPatrLst.Where(s => !s.Terminated))
+                                            {
+                                                mst.DoStep();
+                                            }
+                                        } while (seedsPatrLst.Any(s => !s.Terminated));
+                                    })
                                     .ConfigureAwait(false);
 
             var segments = new List<IMST>(minimaCount);
-            foreach (var lst in resultsSeeds)
+            foreach (var lst in seeds)
                 segments.AddRange(lst);
 
-            mySegments = segments;
+            return segments;
         }
+
+        private async Task<IEnumerable<IMST>> FloodAsyncST() => await Task.Run(() =>
+        {
+            var segments = new List<PrimsMST>(myMinimasIdxs.Select(m => new PrimsMST(m, LOGGED.Memory)));
+
+            LinkedList<PrimsMST> seeds = new LinkedList<PrimsMST>(segments);
+            while (seeds.Any())
+            {
+                #region Clean from terminated, and find lowest
+                byte lowestMinima = byte.MaxValue;
+                LinkedListNode<PrimsMST> current = seeds.First;
+                LinkedListNode<PrimsMST> next;
+                while (current.Next != null)
+                {
+                    next = current.Next;
+
+                    if (current.Value.Terminated)
+                        seeds.Remove(current);
+                    else if (current.Value.CurrentLevel < lowestMinima)
+                        lowestMinima = current.Value.CurrentLevel;
+
+                    current = next;
+                }
+
+                if (current.Value.Terminated)
+                    seeds.Remove(current);
+                else if (current.Value.CurrentLevel < lowestMinima)
+                    lowestMinima = current.Value.CurrentLevel;
+                #endregion
+
+                if (!seeds.Any())
+                    break;
+
+                // Step only with the the lowest ones
+                foreach (var seed in seeds)
+                    if (seed.CurrentLevel == lowestMinima)
+                        seed.DoStep();
+            }
+
+            return segments;
+        }).ConfigureAwait(false);
+
 
         public async Task CreateSampleLayersAsync(SampleType smapleType, string prefix)
         {
+            string now = TimeStamp;
             int segmentsCount = mySegments.Count();
 
             foreach (var sourceLayer in myCutedLayers.Values)
@@ -168,7 +236,7 @@ namespace MARGO.BL
                                         ).ConfigureAwait(false);
 
 
-                var resultLayerID = $"{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.CreateSampleLayer) : prefix)}_{sourceLayer.ID}";
+                var resultLayerID = $"{now}_{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.CreateSampleLayer) : prefix)}_{sourceLayer.ID}";
                 mySampleLayers[resultLayerID] = new RasterLayer(resultLayerID, targetMemory, sourceLayer.Width, sourceLayer.Height);
             }
         }

@@ -264,6 +264,8 @@ namespace MARGO.ViewModels
             {
                 StartBusy();
                 await Project.FloodAsync();
+
+                myUIServices.ShowInfo("Flood done.");
             },
             () => Project.CanFlood)
         { Finaly = () => FloodTime = EndBusy() };
@@ -277,7 +279,7 @@ namespace MARGO.ViewModels
                 StartBusy();
                 await Project.CreateSampleLayersAsync(smapleType, smapleType.ToString());
 
-                this.ChangeFreshMap();
+                //this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
             })
         { Finaly = () => SampleTime = EndBusy() };
@@ -297,7 +299,9 @@ namespace MARGO.ViewModels
                 {
                     var imageSource = new BitmapImage();
                     imageSource.BeginInit();
-                    imageSource.StreamSource = currentMap.Stream;
+                    var stream = currentMap.Stream;
+                    stream.Seek(0, SeekOrigin.Begin);
+                    imageSource.StreamSource = stream;
                     imageSource.EndInit();
 
                     this.ImageSource = imageSource;

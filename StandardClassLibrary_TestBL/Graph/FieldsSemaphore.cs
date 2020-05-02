@@ -12,13 +12,13 @@ namespace MARGO.BL.Graph
 
 
 
-        public static void Initialize(int length)
+        public static void Initialize(int length, bool concurrent)
         {
-            if (length > 0)
+            NODESTAKEN = new bool[length];
+
+            if (concurrent)
             {
                 SPINLOCK = new SpinLock();
-                NODESTAKEN = new bool[length];
-
                 TRYTAKE = idx =>
                 {
                     lock (Convert.ToString(idx))
@@ -40,7 +40,7 @@ namespace MARGO.BL.Graph
             }
             else
             {
-                TRYTAKE = idx => true;
+                TRYTAKE = idx => NODESTAKEN[idx] ? false : (NODESTAKEN[idx] = true);
             }
         }
 

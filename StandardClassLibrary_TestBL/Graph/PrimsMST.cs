@@ -8,7 +8,6 @@ namespace MARGO.BL.Graph
     public interface IMST
     {
         bool Terminated { get; }
-        int SumValue { get; }
         byte CurrentLevel { get; }
         IEnumerable<int> Items { get; }
         void DoStep();
@@ -16,15 +15,15 @@ namespace MARGO.BL.Graph
 
     internal class PrimsMST : IMST
     {
-        private readonly List<int[]> myReachables = new List<int[]>(); // LinkedList
-        private readonly ICollection<int> myItems = new List<int>();
+        private readonly List<int[]> myReachables = new List<int[]>();
+        //private List<int[]> myClosests = new List<int[]>();
+        private readonly List<int> myItems = new List<int>();
         private readonly ReadOnlyMemory<byte> myValueField;
         private bool myCanStep = true;
         private int myLastCoupledIdx;
 
 
         public bool Terminated => !myCanStep;
-        public int SumValue { get; private set; } = 0;
         public byte CurrentLevel { get; private set; }
         public IEnumerable<int> Items => myItems;
 
@@ -67,7 +66,7 @@ namespace MARGO.BL.Graph
                 DiscoverReachables(field);
                 if (myCanStep = AnyReachable())
                 {
-                    SortReachables();
+                    FindClosests();
 
                     do
                     {
@@ -84,10 +83,8 @@ namespace MARGO.BL.Graph
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void DiscoverReachables(ReadOnlySpan<byte> valueField)
         {
-            static int[] Dist(int currentIdx, ReadOnlySpan<byte> values, int otherOffset)
+            static int[] Dist(int currentIdx, int otherIdx, ReadOnlySpan<byte> values)
             {
-                int otherIdx = currentIdx + otherOffset;
-
                 if (otherIdx >= values.Length)
                     otherIdx -= values.Length;
 
@@ -99,28 +96,55 @@ namespace MARGO.BL.Graph
             }
 
             foreach (var offset in OFFSETS)
-                myReachables.Add(Dist(myLastCoupledIdx, valueField, offset));
+            {
+                int otherIdx = myLastCoupledIdx + offset;
+
+                if (!myItems.Contains(otherIdx))
+                    myReachables.Add(Dist(myLastCoupledIdx, otherIdx, valueField));
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SortReachables()
-            => myReachables.Sort(
-                    (pairA, pairB) =>
-                        pairA[0]
-                        .CompareTo(pairB[0])
-                );
+        private void FindClosests()
+        {
+            myReachables.Sort(
+                   (pairA, pairB) =>
+                       pairA[0]
+                       .CompareTo(pairB[0])
+               );
+
+            //int count = 0;
+            //int shortestDistance = int.MaxValue;
+            //foreach (var pair in myReachables)
+            //{
+            //    int d = pair[0];
+            //    if (d < shortestDistance)
+            //    {
+            //        shortestDistance = d;
+            //        count = 1;
+            //    }
+            //    else if (d == shortestDistance)
+            //    {
+            //        count++;
+            //    }
+            //}
+
+            //myClosests = new List<int[]>(count);
+            //foreach (var pair in myReachables)
+            //    if (pair[0] == shortestDistance)
+            //        myClosests.Add(pair);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int TryPickOne(ReadOnlySpan<byte> valueField)
         {
             var picked = myReachables.First();
             int pIdx = picked[1];
-            
+
             if (FieldsSemaphore.TryTake(pIdx))
             {
                 myLastCoupledIdx = pIdx;
                 myItems.Add(myLastCoupledIdx);
-                SumValue += picked[0];
                 CurrentLevel = valueField[myLastCoupledIdx];
             }
             else
@@ -134,8 +158,15 @@ namespace MARGO.BL.Graph
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CleanReachablesFrom(int removeIdx)
         {
-            foreach (var pair in myReachables.Where(pair => pair[1] == removeIdx).ToList())
-                myReachables.Remove(pair);
+            for (int i = myReachables.Count - 1; i >= 0; i--)
+            {
+                //var pair = myReachables[i];
+                if (myReachables[i][1] == removeIdx)
+                {
+                    myReachables.RemoveAt(i);
+                    //myReachables.Remove(pair);
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -145,10 +176,5 @@ namespace MARGO.BL.Graph
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool WasSuccessfulPick()
             => myLastCoupledIdx != -1;
-
-
-
-        public override bool Equals(object obj)
-            => CurrentLevel.Equals(obj);
     }
 }

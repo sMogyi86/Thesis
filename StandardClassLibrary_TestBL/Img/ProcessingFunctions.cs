@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace MARGO.BL.Img
+namespace MARGO.BL.Img  
 {
     public interface IProcessingFunctions
     {
@@ -14,7 +14,6 @@ namespace MARGO.BL.Img
         void ReclassToByte(Variants<int> source, Variants<byte> destination);
         void ReclassToByteLog(Variants<int> source, Variants<byte> destination);
         void FindMinimas(ReadOnlyMemory<byte> variants, ICollection<int> minimas, ReadOnlyMemory<int> offsetsValues, int start, int length);
-        void Flood(IEnumerable<IMST> seeds);
         void CreateSampleLayer(IEnumerable<IMST> segments, ReadOnlyMemory<byte> source, Memory<byte> target, SampleType smapleType);
     }
 
@@ -171,17 +170,6 @@ namespace MARGO.BL.Img
                 if (minIdx == i)
                     minimas.Add(minIdx);
             }
-        }
-
-        public void Flood(IEnumerable<IMST> seeds)
-        {
-            do
-            {
-                foreach (var mst in seeds.Where(s => !s.Terminated))
-                {
-                    mst.DoStep();
-                }
-            } while (seeds.Any(s => !s.Terminated));
         }
 
         public void CreateSampleLayer(IEnumerable<IMST> segments, ReadOnlyMemory<byte> source, Memory<byte> target, SampleType smapleType)

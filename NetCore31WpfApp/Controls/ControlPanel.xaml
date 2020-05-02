@@ -315,7 +315,7 @@
                     Grid.Column="0"
                     CommandParameter="{Binding SampleType}"
                     Command="{Binding CreateSampleCommand}"
-                    Content="Compose&gt;&gt;"
+                    Content="Creat sample layers&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
                 <TextBlock
                     Grid.Row="2"
