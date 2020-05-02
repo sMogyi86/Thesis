@@ -1,5 +1,6 @@
 ﻿using MARGO.Common;
 using MARGO.UIServices;
+using MARGO.ViewModels;
 using System;
 using System.Collections.Generic;
 
@@ -17,24 +18,40 @@ namespace MARGO
         NotifyFinished
     }
 
-    class Script
+    public interface IScript
     {
+        string Name { get; }
+        void StartToPlay(Step name);
+        void DoNextStep();
+        IEnumerable<SampleGroupVM> SampleGroups { get; }
+    }
+
+    internal class Script : IScript
+    {
+        private readonly static LinkedListNode<KeyValuePair<Step, Action>> notifyFinishedStep = new LinkedListNode<KeyValuePair<Step, Action>>(new KeyValuePair<Step, Action>(Step.NotifyFinished, () => UIServices.ShowInfo("AutoPlay finished.")));
         private readonly static MsgBox UIServices = new MsgBox();
         private readonly IExceptionHandler myExceptionHandler = new ExceptionHandler();
         private readonly LinkedList<KeyValuePair<Step, Action>> mySteps;
-
         private Step myLastStep;
         private bool isRunning;
         private LinkedListNode<KeyValuePair<Step, Action>> myNextStep;
+        public string Name { get; }
+        public IEnumerable<SampleGroupVM> SampleGroups { get; private set; }
 
 
 
-        public Script(IReadOnlyDictionary<Step, Action> steps) { mySteps = steps is null ? throw new ArgumentNullException(nameof(steps)) : new LinkedList<KeyValuePair<Step, Action>>(steps); }
-
-        public void SetLastStep(Step name) => myLastStep = name;
-
-        public void StartToPlay()
+        internal Script(string name, IEnumerable<SampleGroupVM> sampleGroups, IReadOnlyDictionary<Step, Action> steps)
         {
+            Name = name;
+            SampleGroups = sampleGroups;
+            mySteps = steps is null ? throw new ArgumentNullException(nameof(steps)) : new LinkedList<KeyValuePair<Step, Action>>(steps);
+        }
+
+
+
+        public void StartToPlay(Step name)
+        {
+            myLastStep = name;
             myNextStep = mySteps.First;
             isRunning = true;
             DoNextStep();
@@ -77,6 +94,6 @@ namespace MARGO
             }
         }
 
-        private readonly static LinkedListNode<KeyValuePair<Step, Action>> notifyFinishedStep = new LinkedListNode<KeyValuePair<Step, Action>>(new KeyValuePair<Step, Action>(Step.NotifyFinished, () => UIServices.ShowInfo("AutoPlay finished.")));
+        public override string ToString() => this.Name;
     }
 }

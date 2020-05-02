@@ -22,6 +22,7 @@
         <common:IntColorConverter x:Key="ColorConverter" />
 
         <sys:String x:Key="ElapsedTimeFormat">h\:mm\:ss\.fff</sys:String>
+        <sys:String x:Key="ThousandFormat">{0:n0}</sys:String>
         <sys:String x:Key="PlayHeader">Play include this.</sys:String>
 
     </UserControl.Resources>
@@ -50,36 +51,26 @@
                 <Grid.RowDefinitions>
                     <RowDefinition />
                     <RowDefinition />
-                    <RowDefinition />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
 
-                <Button
-                    Grid.Row="0"
-                    Grid.Column="0"
-                    Command="{Binding LoadCommand}"
-                    Content="Load&gt;&gt;"
-                    Style="{StaticResource ButtonStyle}" />
-                <TextBlock
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    Text="{Binding LoadTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                    <Label Content="Script" />
+                    <ComboBox ItemsSource="{Binding Scripts}" SelectedItem="{Binding SelectedScript}" />
+                </StackPanel>
 
-                <Label
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    Content="Concurrent threads:" />
-                <TextBox
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Text="{Binding LevelOfParallelism, UpdateSourceTrigger=PropertyChanged}" />
+                <StackPanel Grid.Row="0" Grid.Column="1">
+                    <Label Content="Concurrent threads:" />
+                    <TextBox Text="{Binding LevelOfParallelism, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
 
                 <Button
-                    Grid.Row="2"
+                    Grid.Row="1"
                     Grid.Column="0"
+                    CommandParameter="{Binding LastStep}"
                     Command="{Binding AutoPlayCommand}"
                     Content="AutoPlay&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
@@ -87,7 +78,16 @@
                     Grid.Row="2"
                     Grid.Column="1"
                     Text="{Binding AutoPlayTime, StringFormat={StaticResource ElapsedTimeFormat}}" />-->
-
+                <Button
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Command="{Binding LoadCommand}"
+                    Content="Load&gt;&gt;"
+                    Style="{StaticResource ButtonStyle}" />
+                <!--<TextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    Text="{Binding LoadTime, StringFormat={StaticResource ElapsedTimeFormat}}" />-->
             </Grid>
         </GroupBox>
 
@@ -267,7 +267,7 @@
                         Grid.Column="0"
                         Content="MinimasCount"
                         HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="1" Text="{Binding MinimasCount}" />
+                    <TextBlock Grid.Column="1" Text="{Binding MinimasCount, StringFormat={StaticResource ThousandFormat}}" />
                 </Grid>
             </Grid>
         </GroupBox>
@@ -339,7 +339,6 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
@@ -367,9 +366,17 @@
 
                 <Button
                     Grid.Row="2"
+                    Grid.Column="0"
+                    CommandParameter="{Binding SelectedScript}"
+                    Command="{Binding LoadEmptyGroupsCommand}"
+                    Content="Load empties"
+                    Style="{StaticResource ButtonStyle}" />
+
+                <Button
+                    Grid.Row="2"
                     Grid.Column="1"
                     Command="{Binding CreateGroupCommand}"
-                    Content="CreateGroup"
+                    Content="Create group"
                     Style="{StaticResource ButtonStyle}" />
 
                 <ListBox
@@ -378,7 +385,15 @@
                     Grid.Column="0"
                     Grid.ColumnSpan="2"
                     ItemsSource="{Binding Groups}"
-                    SelectedItem="{Binding CurrentGroup, Mode=OneWayToSource}">
+                    HorizontalContentAlignment="Stretch">
+
+                    <ListBox.Resources>
+                        <common:BindingProxy x:Key="proxy" Data="{Binding}" />
+
+                        <Style TargetType="Button" BasedOn="{StaticResource ButtonStyle}">
+                            <Setter Property="Margin" Value="0,3" />
+                        </Style>
+                    </ListBox.Resources>
 
                     <ListBox.ItemTemplate>
                         <DataTemplate>
@@ -386,6 +401,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
@@ -398,8 +414,31 @@
                                         <SolidColorBrush Color="{Binding Color, Converter={StaticResource ColorConverter}}" />
                                     </Rectangle.Fill>
                                 </Rectangle>
-                                <TextBlock Grid.Column="1" Text="{Binding Name}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Text="{Binding Name}"
+                                    HorizontalAlignment="Stretch" />
                                 <TextBlock Grid.Column="2" Text="{Binding Count}" />
+                                <ComboBox Grid.Column="3">
+                                    <ComboBoxItem>
+                                        <Button
+                                            CommandParameter="{Binding}"
+                                            Command="{Binding Data.AddToGroupCommand, Source={StaticResource proxy}}"
+                                            Content="Add" />
+                                    </ComboBoxItem>
+                                    <ComboBoxItem>
+                                        <Button
+                                            CommandParameter="{Binding}"
+                                            Command="{Binding Data.ClearGroupCommand, Source={StaticResource proxy}}"
+                                            Content="Clear" />
+                                    </ComboBoxItem>
+                                    <ComboBoxItem>
+                                        <Button
+                                            CommandParameter="{Binding}"
+                                            Command="{Binding Data.DeleteGroupCommand, Source={StaticResource proxy}}"
+                                            Content="Delete" />
+                                    </ComboBoxItem>
+                                </ComboBox>
 
                             </Grid>
                         </DataTemplate>
@@ -410,27 +449,12 @@
                 <Button
                     Grid.Row="4"
                     Grid.Column="0"
-                    CommandParameter="{Binding CurrentGroup, Mode=OneWay}"
-                    Command="{Binding DeleteGroupCommand}"
-                    Content="DeleteGroup"
-                    Style="{StaticResource ButtonStyle}" />
-                <Button
-                    Grid.Row="4"
-                    Grid.Column="1"
-                    CommandParameter="{Binding CurrentGroup, Mode=OneWay}"
-                    Command="{Binding AddToGroupCommand}"
-                    Content="AddToGroup"
-                    Style="{StaticResource ButtonStyle}" />
-
-                <Button
-                    Grid.Row="5"
-                    Grid.Column="0"
                     CommandParameter="{Binding SampleType}"
                     Command="{Binding ClassifyCommand}"
                     Content="Classify&gt;&gt;"
                     Style="{StaticResource ButtonStyle}" />
                 <TextBlock
-                    Grid.Row="5"
+                    Grid.Row="4"
                     Grid.Column="1"
                     Text="{Binding ClassifyTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
 

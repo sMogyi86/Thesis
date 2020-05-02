@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MARGO.BL
@@ -33,6 +34,7 @@ namespace MARGO.BL
         public Variants<byte> BYTES { get; private set; }
         public Variants<byte> LOGGED { get; private set; }
         public ReadOnlyMemory<byte> MINIMAS { get; private set; }
+        public int MinimasCount { get; private set; }
         private IEnumerable<int> myMinimasIdxs = Enumerable.Empty<int>();
 
         private IEnumerable<IMST> mySegments = Enumerable.Empty<IMST>();
@@ -58,7 +60,7 @@ namespace MARGO.BL
 
         public async Task Save(Image image, string id) => await myIOService.Save(image, id).ConfigureAwait(false);
 
-        public async Task Cut(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string prefix)
+        public async Task Cut(int topLeftX, int topLeftY, int bottomRightX, int bottomRightY, string prefix, CancellationToken token)
         {
             string now = TimeStamp;
 
@@ -67,11 +69,11 @@ namespace MARGO.BL
                 {
                     var clID = $"{now}_{(string.IsNullOrWhiteSpace(prefix) ? nameof(myProcessingFunctions.Cut) : prefix)}_{layer.ID}";
                     myCutedLayers[clID] = myProcessingFunctions.Cut(layer, topLeftX, topLeftY, bottomRightX, bottomRightY, clID);
-                }).ConfigureAwait(false);
+                }, token).ConfigureAwait(false);
         }
 
         public bool CanCalcVariants => myCutedLayers.Any();
-        public async Task CalculateVariantsWithStatsAsync(byte range)
+        public async Task CalculateVariantsWithStatsAsync(byte range, CancellationToken token)
         {
             var firstLayer = myCutedLayers.First().Value;
             RAW = new Variants<int>(firstLayer.Width, firstLayer.Height);
@@ -82,7 +84,7 @@ namespace MARGO.BL
                 {
                     foreach (var layer in myCutedLayers.Values)
                         myProcessingFunctions.CalculateVariants(layer.Memory, RAW.Data, offsetValues, start, length);
-                }).ConfigureAwait(false);
+                }, token).ConfigureAwait(false);
 
             await Task.Run(() =>
             {
@@ -93,10 +95,10 @@ namespace MARGO.BL
 
                 myProcessingFunctions.ReclassToByteLog(RAW, LOGGED = new Variants<byte>(RAW.Width, RAW.Height));
                 myProcessingFunctions.PopulateStats(LOGGED);
-            }).ConfigureAwait(false);
+            }, token).ConfigureAwait(false);
         }
 
-        public async Task FindMinimasAsync(byte range)
+        public async Task FindMinimasAsync(byte range, CancellationToken token)
         {
             var offsetValues = Offsets.CalculateOffsetsFor(LOGGED.Width, range);
 
@@ -106,7 +108,7 @@ namespace MARGO.BL
                                         var listMins = new List<int>();
                                         myProcessingFunctions.FindMinimas(LOGGED.Memory, listMins, offsetValues, start, length);
                                         return listMins;
-                                    }).ConfigureAwait(false);
+                                    }, token).ConfigureAwait(false);
 
             var minimaIds = new List<int>(resultMinimas.Select(lst => lst.Count).Sum());
             foreach (var listMins in resultMinimas)
@@ -120,10 +122,11 @@ namespace MARGO.BL
                 minimas[idx] = byte.MaxValue;
 
             MINIMAS = minimas;
+            MinimasCount = minimaIds.Count;
         }
 
         public bool CanFlood => myMinimasIdxs.Any();
-        public async Task FloodAsync()
+        public async Task FloodAsync(CancellationToken token)
         {
             PrimsMST.Initalize(LOGGED.Width);
 
@@ -131,18 +134,18 @@ namespace MARGO.BL
             if (LevelOfParallelism == 1)
             {
                 FieldsSemaphore.Initialize(LOGGED.Memory.Length, false);
-                segments = await this.FloodAsyncST().ConfigureAwait(false);
+                segments = await this.FloodAsyncST( token).ConfigureAwait(false);
             }
             else
             {
                 FieldsSemaphore.Initialize(LOGGED.Memory.Length, true);
-                segments = await this.FloodAsyncMT().ConfigureAwait(false);
+                segments = await this.FloodAsyncMT( token).ConfigureAwait(false);
             }
 
             mySegments = segments;
         }
 
-        private async Task<IEnumerable<IMST>> FloodAsyncMT()
+        private async Task<IEnumerable<IMST>> FloodAsyncMT(CancellationToken token)
         {
             int minimaCount = myMinimasIdxs.Count();
 
@@ -156,7 +159,7 @@ namespace MARGO.BL
                                             listSeeds.Add(new PrimsMST(minIdx, LOGGED.Memory));
 
                                         return listSeeds;
-                                    }).ConfigureAwait(false);
+                                    }, token).ConfigureAwait(false);
 
             // Flood
             await myRunner.ScheduleAsync(seeds,
@@ -170,7 +173,7 @@ namespace MARGO.BL
                                                 mst.DoStep();
                                             }
                                         } while (seedsPatrLst.Any(s => !s.Terminated));
-                                    })
+                                    }, token)
                                     .ConfigureAwait(false);
 
             var segments = new List<IMST>(minimaCount);
@@ -180,49 +183,49 @@ namespace MARGO.BL
             return segments;
         }
 
-        private async Task<IEnumerable<IMST>> FloodAsyncST() => await Task.Run(() =>
-        {
-            var segments = new List<PrimsMST>(myMinimasIdxs.Select(m => new PrimsMST(m, LOGGED.Memory)));
+        private async Task<IEnumerable<IMST>> FloodAsyncST(CancellationToken token) => await Task.Run(() =>
+       {
+           var segments = new List<PrimsMST>(myMinimasIdxs.Select(m => new PrimsMST(m, LOGGED.Memory)));
 
-            LinkedList<PrimsMST> seeds = new LinkedList<PrimsMST>(segments);
-            while (seeds.Any())
-            {
+           LinkedList<PrimsMST> seeds = new LinkedList<PrimsMST>(segments);
+           while (seeds.Any())
+           {
                 #region Clean from terminated, and find lowest
                 byte lowestMinima = byte.MaxValue;
-                LinkedListNode<PrimsMST> current = seeds.First;
-                LinkedListNode<PrimsMST> next;
-                while (current.Next != null)
-                {
-                    next = current.Next;
+               LinkedListNode<PrimsMST> current = seeds.First;
+               LinkedListNode<PrimsMST> next;
+               while (current.Next != null)
+               {
+                   next = current.Next;
 
-                    if (current.Value.Terminated)
-                        seeds.Remove(current);
-                    else if (current.Value.CurrentLevel < lowestMinima)
-                        lowestMinima = current.Value.CurrentLevel;
+                   if (current.Value.Terminated)
+                       seeds.Remove(current);
+                   else if (current.Value.CurrentLevel < lowestMinima)
+                       lowestMinima = current.Value.CurrentLevel;
 
-                    current = next;
-                }
+                   current = next;
+               }
 
-                if (current.Value.Terminated)
-                    seeds.Remove(current);
-                else if (current.Value.CurrentLevel < lowestMinima)
-                    lowestMinima = current.Value.CurrentLevel;
+               if (current.Value.Terminated)
+                   seeds.Remove(current);
+               else if (current.Value.CurrentLevel < lowestMinima)
+                   lowestMinima = current.Value.CurrentLevel;
                 #endregion
 
                 if (!seeds.Any())
-                    break;
+                   break;
 
                 // Step only with the the lowest ones
                 foreach (var seed in seeds)
-                    if (seed.CurrentLevel == lowestMinima)
-                        seed.DoStep();
-            }
+                   if (seed.CurrentLevel == lowestMinima)
+                       seed.DoStep();
+           }
 
-            return segments;
-        }).ConfigureAwait(false);
+           return segments;
+       }, token).ConfigureAwait(false);
 
 
-        public async Task CreateSampleLayersAsync(SampleType smapleType, string prefix)
+        public async Task CreateSampleLayersAsync(SampleType smapleType, string prefix, CancellationToken token)
         {
             string now = TimeStamp;
             int segmentsCount = mySegments.Count();
@@ -233,6 +236,7 @@ namespace MARGO.BL
 
                 await myRunner.RunAsync(segmentsCount, LevelOfParallelism,
                                         (start, length) => myProcessingFunctions.CreateSampleLayer(mySegments.Skip(start).Take(length), sourceLayer.Memory, targetMemory, smapleType)
+                                        , token
                                         ).ConfigureAwait(false);
 
 
@@ -241,7 +245,7 @@ namespace MARGO.BL
             }
         }
 
-        public async Task ClassifyAsync(SampleType sType, IEnumerable<ISampleGroup> samples)
+        public async Task ClassifyAsync(SampleType sType, IEnumerable<ISampleGroup> samples, CancellationToken token)
         {
             int shortRegisterCount;
 
@@ -286,7 +290,7 @@ namespace MARGO.BL
                         foreach (var idx in segment)
                             classifiedImage[idx] = categoryMapping[category];
                     }
-                }).ConfigureAwait(false);
+                }, token).ConfigureAwait(false);
 
             CLASSIFIEDIMAGE = classifiedImage;
             ColorMapping = mappings.ColorMapping;

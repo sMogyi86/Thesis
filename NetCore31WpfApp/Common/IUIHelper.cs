@@ -12,6 +12,6 @@ namespace MARGO.Common
 
     interface IHaveScript
     {
-        void SetLastStep(Step step);
+        Step LastStep { get; set; }
     }
 }

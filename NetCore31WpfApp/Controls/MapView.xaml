@@ -33,20 +33,28 @@
 
         <ComboBox
             Grid.Row="0"
+            ItemsSource="{Binding Maps}"
+            SelectedItem="{Binding CurrentMap}"
             Margin="3"
             HorizontalAlignment="Right"
-            VerticalAlignment="Top"
-            ItemsSource="{Binding Maps}"
-            SelectedItem="{Binding CurrentMap}" />
+            VerticalAlignment="Top" />
 
         <Button
             Grid.Row="0"
-            HorizontalAlignment="Right"
-            VerticalAlignment="Bottom"
             Command="{Binding SaveMapCommand}"
             CommandParameter="{Binding CurrentMap}"
             Content="Save"
-            Style="{StaticResource ButtonStyle}" />
+            Style="{StaticResource ButtonStyle}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom" />
+
+        <Button
+            Grid.Row="0"
+            Command="{Binding CancelCommand}"
+            Content="Cancel"
+            Style="{StaticResource ButtonStyle}"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top" />
 
         <StackPanel
             Grid.Row="1"

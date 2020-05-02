@@ -19,7 +19,7 @@
             <Setter Property="Width" Value="Auto" />
             <Setter Property="MinHeight" Value="24" />
             <Setter Property="Height" Value="24" />
-            <Setter Property="Margin" Value="3,6" />
+            <Setter Property="Margin" Value="3" />
         </Style>
 
         <Style TargetType="TextBlock">

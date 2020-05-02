@@ -19,7 +19,7 @@ namespace MARGO.Controls
             if (sender is RadioButton rb
                 && rb.Tag is Step lastStepInGroup
                 && this.DataContext is IHaveScript viewModel)
-                viewModel.SetLastStep(lastStepInGroup);
+                viewModel.LastStep = lastStepInGroup;
         }
     }
 }

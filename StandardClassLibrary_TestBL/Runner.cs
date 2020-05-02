@@ -2,12 +2,13 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace MARGO.BL
 {
     internal class Runner
     {
-        public async Task RunAsync(int volume, int sliceCount, Action<int, int> action)
+        public async Task RunAsync(int volume, int sliceCount, Action<int, int> action, CancellationToken token)
         {
             var lengths = this.Lengths(volume, sliceCount);
             var tasks = new Task[sliceCount];
@@ -18,7 +19,7 @@ namespace MARGO.BL
             {
                 int sectionStart = start;
 
-                tasks[i++] = Task.Run(() => action(sectionStart, l));
+                tasks[i++] = Task.Run(() => action(sectionStart, l), token);
 
                 start += l;
             }
@@ -27,7 +28,7 @@ namespace MARGO.BL
 
         }
 
-        public async Task ScheduleAsync<T>(IEnumerable<T> volume, int maxCount, Action<T> action)
+        public async Task ScheduleAsync<T>(IEnumerable<T> volume, int maxCount, Action<T> action, CancellationToken token)
         {
             int count = volume.Count();
             int i = 0;
@@ -38,7 +39,7 @@ namespace MARGO.BL
 
                 int j = 0;
                 foreach (var data in slice)
-                    tasks[j++] = Task.Run(() => action(data));
+                    tasks[j++] = Task.Run(() => action(data), token);
 
                 await TryCatchAsync(Task.WhenAll(tasks)).ConfigureAwait(false);
 
@@ -46,7 +47,7 @@ namespace MARGO.BL
             } while ((count -= maxCount) > 0);
         }
 
-        public async Task<T[]> PerformAsync<T>(int volume, int sliceCount, Func<int, int, T> func)
+        public async Task<T[]> PerformAsync<T>(int volume, int sliceCount, Func<int, int, T> func, CancellationToken token)
         {
             var lengths = this.Lengths(volume, sliceCount);
             var tasks = new Task<T>[sliceCount];
@@ -57,7 +58,7 @@ namespace MARGO.BL
             {
                 int sectionStart = start;
 
-                tasks[i++] = Task.Run(() => func(sectionStart, l));
+                tasks[i++] = Task.Run(() => func(sectionStart, l), token);
 
                 start += l;
             }
@@ -96,7 +97,10 @@ namespace MARGO.BL
             }
             catch (Exception)
             {
-                throw task.Exception;
+                if (task?.Exception != null)
+                    throw task.Exception;
+                else
+                    throw;
             }
         }
 
@@ -108,7 +112,10 @@ namespace MARGO.BL
             }
             catch (Exception)
             {
-                throw task.Exception;
+                if (task?.Exception != null)
+                    throw task.Exception;
+                else
+                    throw;
             }
         }
     }

@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -16,7 +17,7 @@ using System.Windows.Media.Imaging;
 
 namespace MARGO.ViewModels
 {
-    class ViewModel : ObservableBase, IUIHelper, IHaveScript
+    internal partial class ViewModel : ObservableBase, IUIHelper, IHaveScript, IDisposable
     {
         #region Services
         private readonly IImageFactory myImageFactory = MyServices.GetImageFactory();
@@ -24,128 +25,21 @@ namespace MARGO.ViewModels
         #endregion
 
 
-
-        private readonly Script myScript;
+        public IScript SelectedScript { get; set; }
+        public IEnumerable<IScript> Scripts { get; }
         public ViewModel()
         {
-            myScript = new Script(new Dictionary<Step, Action>()
-            {
-                {Step.Load,
-                    async ()=> {
-                        StartBusy();
-                        string laodPath;
-#if DEBUG
-                        laodPath = @"D:\Segment\";
-#else
-                        laodPath = this.GetType().Assembly.Location;
-#endif
-                        await Load(new DirectoryInfo(laodPath).EnumerateFiles("*.TIF").Select(fi => fi.FullName));
-                        LoadTime = EndBusy();
-                    } },
-                {Step.Compose,
-                    ()=> {
-                        Red = Project.Layers.FirstOrDefault(l => l.ID.Contains("B40"));
-                        Green= Project.Layers.FirstOrDefault(l => l.ID.Contains("B50"));
-                        Blue= Project.Layers.FirstOrDefault(l => l.ID.Contains("B30"));
-                        //ComposeCommand.Execute(null);
-                        IsBusy = true; IsBusy = false;
-                    } },
-                {Step.Cut, () => CutCommand.Execute(WorkspacePrefix)},
-                {Step.Variants, ()=> VariantsCommand.Execute(VariantsRange)},
-                {Step.Minimas, ()=> MinimasCommand.Execute(MinimasRange)},
-                {Step.Flood,
-                    async ()=> {
-                        StartBusy();
-                        await Project.FloodAsync();
-                        FloodTime = myStopwatch.Elapsed;
-
-                        myStopwatch.Restart();
-                        await Project.CreateSampleLayersAsync(SampleType, SampleType.ToString());
-
-                        this.ChangeFreshMap();
-                        this.RaisePropertyChanged(nameof(Layers));
-                        SampleTime = EndBusy();
-                    } },
-                {Step.Classify,
-                    ()=> {
-                        var groups = new SampleGroupVM[]
-                        {
-                            new SampleGroupVM("viz1", 0xFF1E90FF, CalcIndex, new Point[]
-                            {
-                                new Point(132,3946),
-                                new Point(334,3711),
-                                new Point(490,3796),
-                                new Point(346,3903)
-                            }),
-                            new SampleGroupVM("viz2", 0xFF000080, CalcIndex, new Point[]
-                            {
-                                new Point(1809,2955),
-                                new Point(1507,2773),
-                                new Point(906,2654),
-                                new Point(1161,1353)
-                            }),
-                            new SampleGroupVM("erdo1", 0xFFA52A2A, CalcIndex, new Point[]
-                            {
-                                new Point(2842,1090),
-                                new Point(2479,1333)
-                            }),
-                            new SampleGroupVM("erdo2", 0xFFB22222, CalcIndex, new Point[]
-                            {
-                                new Point(1202,2213),
-                                new Point(956,2279)
-                            }),
-                            new SampleGroupVM("veg1", 0xFFFFA500, CalcIndex, new Point[]
-                            {
-                                new Point(1443,3179),
-                                new Point(1558,2504),
-                                new Point(2147,3074)
-                            }),
-                            new SampleGroupVM("veg2", 0xFFFF4500, CalcIndex, new Point[]
-                            {
-                                new Point(1641,2346),
-                                new Point(2218,1775),
-                                new Point(1098,3902)
-                            }),
-                            new SampleGroupVM("tal1", 0xFF66CDAA, CalcIndex, new Point[]
-                            {
-                                new Point(2251,3118),
-                                new Point(766,3397),
-                                new Point(1998,1895)
-                            }),
-                            new SampleGroupVM("tal2", 0xFF2E8B57, CalcIndex, new Point[]
-                            {
-                                new Point(1875,1742),
-                                new Point(1620,2245),
-                                new Point(2043,2648)
-                            }),
-                            new SampleGroupVM("legelo", 0xFFF5DEB3, CalcIndex, new Point[]
-                            {
-                                new Point(1528,3258),
-                                new Point(1672,3232)
-                            })
-                            //new SampleGroupVM("telep", 0xFFA9A9A9, CalcIndex, new Point[]
-                            //{
-                            //    new Point(2968,1896),
-                            //    new Point(3000,1909),
-                            //    new Point(2966,1941)
-                            //})
-                        };
-
-                        foreach (var grp in groups)
-                            Groups.Add(grp);
-
-                        ClassifyCommand.Execute(SampleType);
-                    } },
-            });
+            Scripts = new IScript[2] { this.Small(), this.Big() };
+            SelectedScript = Scripts.First();
 
             this.PropertyChanged +=
                 (sender, e) =>
                 {
                     if (e.PropertyName == nameof(IsBusy) && !IsBusy)
-                        myScript.DoNextStep();
+                        SelectedScript.DoNextStep();
                 };
         }
-        public void SetLastStep(Step step) => myScript.SetLastStep(step);
+        public Step LastStep { get; set; }
 
 
 
@@ -153,7 +47,9 @@ namespace MARGO.ViewModels
         private Project Project => Project.Instance;
         public bool IsBusy { get; set; } = false;
         public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
-        public ICommand AutoPlayCommand => new DelegateCommand(() => myScript.StartToPlay());
+        public ICommand AutoPlayCommand => new DelegateCommand<Step>(step => SelectedScript.StartToPlay(step));
+        private CancellationTokenSource myTokenSource;
+        public ICommand CancelCommand => new DelegateCommand(() => myTokenSource?.Cancel());
 
 
 
@@ -200,11 +96,11 @@ namespace MARGO.ViewModels
 
 
         public ICommand TopLeftCommand => new DelegateCommand(() => Handle = p => TopLeftPoint = p, () => Red != null && Green != null && Blue != null);
-        private Point? TopLeftPoint { get; set; } = new Point(1800, 1600);
+        private Point? TopLeftPoint { get; set; }
         public double? TopLeftX => TopLeftPoint?.X;
         public double? TopLeftY => TopLeftPoint?.Y;
         public ICommand BottomRightCommand => new DelegateCommand(() => Handle = p => BottomRightPoint = p, () => Red != null && Green != null && Blue != null);
-        private Point? BottomRightPoint { get; set; } = new Point(6300, 5800);
+        private Point? BottomRightPoint { get; set; }
         public double? BottomRightX => BottomRightPoint?.X;
         public double? BottomRightY => BottomRightPoint?.Y;
         public string WorkspacePrefix { get; set; } = string.Empty;
@@ -212,7 +108,7 @@ namespace MARGO.ViewModels
             async (prefix) =>
             {
                 StartBusy();
-                await Project.Cut((int)TopLeftPoint.Value.X, (int)TopLeftPoint.Value.Y, (int)BottomRightPoint.Value.X, (int)BottomRightPoint.Value.Y, prefix);
+                await Project.Cut((int)TopLeftPoint.Value.X, (int)TopLeftPoint.Value.Y, (int)BottomRightPoint.Value.X, (int)BottomRightPoint.Value.Y, prefix, myTokenSource.Token);
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
@@ -228,7 +124,7 @@ namespace MARGO.ViewModels
             async range =>
             {
                 StartBusy();
-                await Project.CalculateVariantsWithStatsAsync(range);
+                await Project.CalculateVariantsWithStatsAsync(range, myTokenSource.Token);
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.BYTES), new ImageParts(Project.BYTES.Width, Project.BYTES.Height, Project.BYTES.Memory)));
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.LOGGED), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.LOGGED.Memory)));
@@ -246,29 +142,34 @@ namespace MARGO.ViewModels
             async (range) =>
             {
                 StartBusy();
-                await Project.FindMinimasAsync(range);
+                await Project.FindMinimasAsync(range, myTokenSource.Token);
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
                 CurrentMap = Maps.Last();
 
+                this.RaisePropertyChanged(nameof(MinimasCount));
                 this.RaisePropertyChanged(nameof(FloodCommand));
             },
             range => Project.LOGGED != null && range > 1 && range % 2 == 1)
         { Finaly = () => MinimasTime = EndBusy() };
         public TimeSpan MinimasTime { get; set; }
-        public string MinimasCount { get; set; } = "TODO";
+        public int MinimasCount => Project.MinimasCount;
 
 
         public ICommand FloodCommand => new DelegateCommandAsync(
             async () =>
             {
                 StartBusy();
-                await Project.FloodAsync();
-
-                myUIServices.ShowInfo("Flood done.");
+                await Project.FloodAsync(myTokenSource.Token);
             },
             () => Project.CanFlood)
-        { Finaly = () => FloodTime = EndBusy() };
+        {
+            Finaly = () =>
+            {
+                FloodTime = EndBusy();
+                myUIServices.ShowInfo("Flood done.");
+            }
+        };
         public TimeSpan FloodTime { get; set; }
 
 
@@ -277,7 +178,7 @@ namespace MARGO.ViewModels
             async (smapleType) =>
             {
                 StartBusy();
-                await Project.CreateSampleLayersAsync(smapleType, smapleType.ToString());
+                await Project.CreateSampleLayersAsync(smapleType, smapleType.ToString(), myTokenSource.Token);
 
                 //this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
@@ -366,24 +267,16 @@ namespace MARGO.ViewModels
                 CurrentName = string.Empty;
             },
             () => 0 != CurrentColor && !string.IsNullOrEmpty(CurrentName) && !Groups.Any(g => CurrentColor == g.Color));
+        public ICommand LoadEmptyGroupsCommand => new DelegateCommand<IScript>(
+            script =>
+            {
+                Groups.Clear();
+
+                foreach (var group in script.SampleGroups)
+                    Groups.Add(group.EmptyCopy());
+
+            }, script => script != null);
         public ObservableCollection<SampleGroupVM> Groups { get; } = new ObservableCollection<SampleGroupVM>();
-        private SampleGroupVM myCurrentGroup;
-        public SampleGroupVM CurrentGroup
-        {
-            get { return myCurrentGroup; }
-            set
-            {
-                myCurrentGroup = value;
-                this.RaisePropertyChanged(nameof(DeleteGroupCommand));
-                this.RaisePropertyChanged(nameof(AddToGroupCommand));
-            }
-        }
-        public ICommand DeleteGroupCommand => new DelegateCommand<SampleGroupVM>(
-            grp =>
-            {
-                Groups.Remove(grp);
-                this.RaisePropertyChanged(nameof(ClassifyCommand));
-            }, grp => grp != null);
         public ICommand AddToGroupCommand => new DelegateCommand<SampleGroupVM>(
             grp => Handle =
                 p =>
@@ -391,24 +284,31 @@ namespace MARGO.ViewModels
                     grp.AddPoint(p);
                     this.RaisePropertyChanged(nameof(ClassifyCommand));
                 }, grp => grp != null);
+        public ICommand ClearGroupCommand => new DelegateCommand<SampleGroupVM>(grp => grp.Clear(), grp => grp != null);
+        public ICommand DeleteGroupCommand => new DelegateCommand<SampleGroupVM>(
+            grp =>
+            {
+                Groups.Remove(grp);
+                this.RaisePropertyChanged(nameof(ClassifyCommand));
+            }, grp => grp != null);
         public ICommand ClassifyCommand => new DelegateCommandAsync<SampleType>(
             async sType =>
             {
                 StartBusy();
-                await Project.ClassifyAsync(sType, Groups);
+                await Project.ClassifyAsync(sType, Groups, myTokenSource.Token);
 
                 Maps.Add(myImageFactory.CreateImage($"{nameof(Project.CLASSIFIEDIMAGE)}_RAW", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE)));
                 CurrentMap = Maps.Last();
                 Maps.Add(myImageFactory.CreateImage($"{nameof(Project.CLASSIFIEDIMAGE)}_COLORED", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE, Project.ColorMapping)));
             },
             _ => Groups.Any())
-                            {
-                                Finaly = () =>
-                                {
-                                    ClassifyTime = EndBusy();
-                                    RaiseForAll();
-                                }
-                            };
+        {
+            Finaly = () =>
+            {
+                ClassifyTime = EndBusy();
+                RaiseForAll();
+            }
+        };
         public TimeSpan ClassifyTime { get; set; }
 
 
@@ -431,15 +331,21 @@ namespace MARGO.ViewModels
 
         private void StartBusy()
         {
+            myTokenSource?.Dispose();
+            myTokenSource = new CancellationTokenSource();
+
             IsBusy = true;
             myStopwatch.Restart();
         }
 
         private TimeSpan EndBusy()
         {
+            myTokenSource?.Dispose();
             myStopwatch.Stop();
             IsBusy = false;
             return myStopwatch.Elapsed;
         }
+
+        public void Dispose() => myTokenSource?.Dispose();
     }
 }

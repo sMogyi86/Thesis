@@ -32,6 +32,8 @@ namespace MARGO.ViewModels
                 myPoints.Add(point);
         }
 
+        internal SampleGroupVM EmptyCopy() => new SampleGroupVM(Name, Color, myCalcIndex);
+
         public void AddPoint(Point? point)
         {
             if (point.HasValue && !myPoints.Contains(point.Value))
@@ -40,5 +42,8 @@ namespace MARGO.ViewModels
                 this.RaisePropertyChanged(nameof(Count));
             }
         }
+
+        public void Clear()
+            => myPoints.Clear();
     }
 }
