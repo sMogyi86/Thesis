@@ -356,6 +356,7 @@ namespace MARGO.ViewModels
         private TimeSpan EndBusy()
         {
             myCurrentTokenSource?.Dispose();
+            myCurrentTokenSource = null;
             myStopwatch.Stop();
             IsBusy = false;
             return myStopwatch.Elapsed;
