@@ -3,6 +3,7 @@ using MARGO.UIServices;
 using MARGO.ViewModels;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace MARGO
 {
@@ -21,17 +22,19 @@ namespace MARGO
     public interface IScript
     {
         string Name { get; }
-        void StartToPlay(Step name);
+        void StartToPlay(Step name, CancellationTokenSource tokenSource);
         void DoNextStep();
         IEnumerable<SampleGroupVM> SampleGroups { get; }
     }
 
     internal class Script : IScript
     {
-        private readonly static LinkedListNode<KeyValuePair<Step, Action>> notifyFinishedStep = new LinkedListNode<KeyValuePair<Step, Action>>(new KeyValuePair<Step, Action>(Step.NotifyFinished, () => UIServices.ShowInfo("AutoPlay finished.")));
+
+
         private readonly static MsgBox UIServices = new MsgBox();
         private readonly IExceptionHandler myExceptionHandler = new ExceptionHandler();
         private readonly LinkedList<KeyValuePair<Step, Action>> mySteps;
+        private readonly LinkedListNode<KeyValuePair<Step, Action>> notifyFinishedStep;
         private Step myLastStep;
         private bool isRunning;
         private LinkedListNode<KeyValuePair<Step, Action>> myNextStep;
@@ -40,18 +43,23 @@ namespace MARGO
 
 
 
-        internal Script(string name, IEnumerable<SampleGroupVM> sampleGroups, IReadOnlyDictionary<Step, Action> steps)
+        internal Script(string name, IEnumerable<SampleGroupVM> sampleGroups, Action deleteTokenSource, IReadOnlyDictionary<Step, Action> steps)
         {
             Name = name;
             SampleGroups = sampleGroups;
+            myDeleteTokenSource = deleteTokenSource;
             mySteps = steps is null ? throw new ArgumentNullException(nameof(steps)) : new LinkedList<KeyValuePair<Step, Action>>(steps);
+            notifyFinishedStep = new LinkedListNode<KeyValuePair<Step, Action>>(new KeyValuePair<Step, Action>(Step.NotifyFinished, () => this.LastStep()));
         }
 
-
-
-        public void StartToPlay(Step name)
+        private Action myDeleteTokenSource;
+        private CancellationTokenSource tokenSourceByRef;
+        private CancellationToken myToken;
+        public void StartToPlay(Step name, CancellationTokenSource tokenSource)
         {
             myLastStep = name;
+            tokenSourceByRef = tokenSource;
+            myToken = tokenSourceByRef.Token;
             myNextStep = mySteps.First;
             isRunning = true;
             DoNextStep();
@@ -59,10 +67,13 @@ namespace MARGO
 
         public void DoNextStep()
         {
+
             if (isRunning && myNextStep != null)
             {
                 try
                 {
+                    myToken.ThrowIfCancellationRequested();
+
                     var currentAction = myNextStep.Value.Value;
 
                     isRunning = Step.NotifyFinished != myNextStep.Value.Key;
@@ -88,10 +99,19 @@ namespace MARGO
                 catch (Exception ex)
                 {
                     isRunning = false;
+                    tokenSourceByRef?.Dispose();
+                    myDeleteTokenSource();
                     myNextStep = null;
                     myExceptionHandler.Handle(ex);
                 }
             }
+        }
+
+        private void LastStep()
+        {
+            tokenSourceByRef?.Dispose();
+            tokenSourceByRef = null;
+            UIServices.ShowInfo("AutoPlay finished.");
         }
 
         public override string ToString() => this.Name;

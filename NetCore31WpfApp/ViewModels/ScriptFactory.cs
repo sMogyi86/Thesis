@@ -73,7 +73,7 @@ namespace MARGO.ViewModels
                             //})
                         };
 
-            return new Script(nameof(Big), sampleGroups, new Dictionary<Step, Action>()
+            return new Script(nameof(Big), sampleGroups, () => this.myAutoPlayTokenSource = null, new Dictionary<Step, Action>()
             {
                 {Step.Load,
                     async ()=> {
@@ -92,8 +92,8 @@ namespace MARGO.ViewModels
                         Red = Project.Layers.FirstOrDefault(l => l.ID.Contains("B40"));
                         Green= Project.Layers.FirstOrDefault(l => l.ID.Contains("B50"));
                         Blue= Project.Layers.FirstOrDefault(l => l.ID.Contains("B30"));
-                        //ComposeCommand.Execute(null);
-                        IsBusy = true; IsBusy = false;
+                        ComposeCommand.Execute(null);
+                        //IsBusy = true; IsBusy = false;
                     } },
                 {Step.Cut,
                     () => {
@@ -106,11 +106,11 @@ namespace MARGO.ViewModels
                 {Step.Flood,
                     async ()=> {
                         StartBusy();
-                        await Project.FloodAsync(myTokenSource.Token);
+                        await Project.FloodAsync(myCurrentTokenSource.Token);
                         FloodTime = myStopwatch.Elapsed;
 
                         myStopwatch.Restart();
-                        await Project.CreateSampleLayersAsync(SampleType, SampleType.ToString(), myTokenSource.Token);
+                        await Project.CreateSampleLayersAsync(SampleType, SampleType.ToString(), myCurrentTokenSource.Token);
 
                         this.ChangeFreshMap();
                         this.RaisePropertyChanged(nameof(Layers));
@@ -173,7 +173,7 @@ namespace MARGO.ViewModels
                             //})
                         };
 
-            return new Script(nameof(Small), sampleGroups, new Dictionary<Step, Action>()
+            return new Script(nameof(Small), sampleGroups, () => this.myAutoPlayTokenSource = null, new Dictionary<Step, Action>()
           {
                 {Step.Load,
                     async ()=> {
@@ -192,8 +192,8 @@ namespace MARGO.ViewModels
                         Red = Project.Layers.FirstOrDefault(l => l.ID.Contains("B40"));
                         Green= Project.Layers.FirstOrDefault(l => l.ID.Contains("B50"));
                         Blue= Project.Layers.FirstOrDefault(l => l.ID.Contains("B30"));
-                        //ComposeCommand.Execute(null);
-                        IsBusy = true; IsBusy = false;
+                        ComposeCommand.Execute(null);
+                        //IsBusy = true; IsBusy = false;
                     } },
                 {Step.Cut,
                     () => {
@@ -208,11 +208,11 @@ namespace MARGO.ViewModels
                         StartBusy();
                         byte tmpLevelOfParallelism = LevelOfParallelism;
                         LevelOfParallelism = 1;
-                        await Project.FloodAsync(myTokenSource.Token);
+                        await Project.FloodAsync(myCurrentTokenSource.Token);
                         FloodTime = myStopwatch.Elapsed;
 
                         myStopwatch.Restart();
-                        await Project.CreateSampleLayersAsync(SampleType, SampleType.ToString(), myTokenSource.Token);
+                        await Project.CreateSampleLayersAsync(SampleType, SampleType.ToString(), myCurrentTokenSource.Token);
 
                         this.ChangeFreshMap();
                         this.RaisePropertyChanged(nameof(Layers));

@@ -10,6 +10,8 @@ namespace MARGO.BL
     {
         public async Task RunAsync(int volume, int sliceCount, Action<int, int> action, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             var lengths = this.Lengths(volume, sliceCount);
             var tasks = new Task[sliceCount];
 
@@ -30,6 +32,8 @@ namespace MARGO.BL
 
         public async Task ScheduleAsync<T>(IEnumerable<T> volume, int maxCount, Action<T> action, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             int count = volume.Count();
             int i = 0;
             do
@@ -49,6 +53,8 @@ namespace MARGO.BL
 
         public async Task<T[]> PerformAsync<T>(int volume, int sliceCount, Func<int, int, T> func, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
+
             var lengths = this.Lengths(volume, sliceCount);
             var tasks = new Task<T>[sliceCount];
 

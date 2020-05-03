@@ -30,7 +30,7 @@ namespace MARGO.ViewModels
         public ViewModel()
         {
             Scripts = new IScript[2] { this.Small(), this.Big() };
-            SelectedScript = Scripts.First();
+            SelectedScript = Scripts.Last();
 
             this.PropertyChanged +=
                 (sender, e) =>
@@ -47,10 +47,21 @@ namespace MARGO.ViewModels
         private Project Project => Project.Instance;
         public bool IsBusy { get; set; } = false;
         public byte LevelOfParallelism { get { return Project.LevelOfParallelism; } set { Project.LevelOfParallelism = value; } }
-        public ICommand AutoPlayCommand => new DelegateCommand<Step>(step => SelectedScript.StartToPlay(step));
-        private CancellationTokenSource myTokenSource;
-        public ICommand CancelCommand => new DelegateCommand(() => myTokenSource?.Cancel());
-
+        private CancellationTokenSource myAutoPlayTokenSource;
+        public ICommand AutoPlayCommand => new DelegateCommand<Step>(step =>
+        {
+            myAutoPlayTokenSource?.Dispose();
+            myAutoPlayTokenSource = new CancellationTokenSource();
+            SelectedScript.StartToPlay(step, myAutoPlayTokenSource);
+        });
+        private CancellationTokenSource myCurrentTokenSource;
+        public ICommand CancelCommand => new DelegateCommand(() =>
+        {
+            if (myAutoPlayTokenSource != null)
+                myAutoPlayTokenSource.Cancel();
+            else
+                myCurrentTokenSource?.Cancel();
+        });
 
 
         public IEnumerable<RasterLayer> Layers => Project.Layers;
@@ -108,7 +119,7 @@ namespace MARGO.ViewModels
             async (prefix) =>
             {
                 StartBusy();
-                await Project.Cut((int)TopLeftPoint.Value.X, (int)TopLeftPoint.Value.Y, (int)BottomRightPoint.Value.X, (int)BottomRightPoint.Value.Y, prefix, myTokenSource.Token);
+                await Project.Cut((int)TopLeftPoint.Value.X, (int)TopLeftPoint.Value.Y, (int)BottomRightPoint.Value.X, (int)BottomRightPoint.Value.Y, prefix, myCurrentTokenSource.Token);
 
                 this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
@@ -124,7 +135,7 @@ namespace MARGO.ViewModels
             async range =>
             {
                 StartBusy();
-                await Project.CalculateVariantsWithStatsAsync(range, myTokenSource.Token);
+                await Project.CalculateVariantsWithStatsAsync(range, myCurrentTokenSource.Token);
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.BYTES), new ImageParts(Project.BYTES.Width, Project.BYTES.Height, Project.BYTES.Memory)));
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.LOGGED), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.LOGGED.Memory)));
@@ -142,7 +153,7 @@ namespace MARGO.ViewModels
             async (range) =>
             {
                 StartBusy();
-                await Project.FindMinimasAsync(range, myTokenSource.Token);
+                await Project.FindMinimasAsync(range, myCurrentTokenSource.Token);
 
                 Maps.Add(myImageFactory.CreateImage(nameof(Project.MINIMAS), new ImageParts(Project.LOGGED.Width, Project.LOGGED.Height, Project.MINIMAS)));
                 CurrentMap = Maps.Last();
@@ -160,7 +171,7 @@ namespace MARGO.ViewModels
             async () =>
             {
                 StartBusy();
-                await Project.FloodAsync(myTokenSource.Token);
+                await Project.FloodAsync(myCurrentTokenSource.Token);
             },
             () => Project.CanFlood)
         {
@@ -178,7 +189,7 @@ namespace MARGO.ViewModels
             async (smapleType) =>
             {
                 StartBusy();
-                await Project.CreateSampleLayersAsync(smapleType, smapleType.ToString(), myTokenSource.Token);
+                await Project.CreateSampleLayersAsync(smapleType, smapleType.ToString(), myCurrentTokenSource.Token);
 
                 //this.ChangeFreshMap();
                 this.RaisePropertyChanged(nameof(Layers));
@@ -295,7 +306,7 @@ namespace MARGO.ViewModels
             async sType =>
             {
                 StartBusy();
-                await Project.ClassifyAsync(sType, Groups, myTokenSource.Token);
+                await Project.ClassifyAsync(sType, Groups, myCurrentTokenSource.Token);
 
                 Maps.Add(myImageFactory.CreateImage($"{nameof(Project.CLASSIFIEDIMAGE)}_RAW", new ImageParts(CurrentMap.Parts.Width, CurrentMap.Parts.Height, Project.CLASSIFIEDIMAGE)));
                 CurrentMap = Maps.Last();
@@ -331,8 +342,11 @@ namespace MARGO.ViewModels
 
         private void StartBusy()
         {
-            myTokenSource?.Dispose();
-            myTokenSource = new CancellationTokenSource();
+            myCurrentTokenSource?.Dispose();
+            if (myAutoPlayTokenSource != null)
+                myCurrentTokenSource = CancellationTokenSource.CreateLinkedTokenSource(myAutoPlayTokenSource.Token);
+            else
+                myCurrentTokenSource = new CancellationTokenSource();
 
             IsBusy = true;
             myStopwatch.Restart();
@@ -340,12 +354,12 @@ namespace MARGO.ViewModels
 
         private TimeSpan EndBusy()
         {
-            myTokenSource?.Dispose();
+            myCurrentTokenSource?.Dispose();
             myStopwatch.Stop();
             IsBusy = false;
             return myStopwatch.Elapsed;
         }
 
-        public void Dispose() => myTokenSource?.Dispose();
+        public void Dispose() => myCurrentTokenSource?.Dispose();
     }
 }

@@ -25,7 +25,8 @@ namespace MARGO.Common
 
         public void Handle(Exception exception)
         {
-            bool canceled = exception is System.Threading.Tasks.TaskCanceledException;
+            bool canceled = exception is OperationCanceledException
+                        || exception is System.Threading.Tasks.TaskCanceledException;
 
             string message;
             string caption;
