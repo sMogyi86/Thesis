@@ -106,7 +106,7 @@ namespace MARGO.ViewModels
                 {Step.Flood,
                     async ()=> {
                         StartBusy();
-                        await Project.FloodAsync(myCurrentTokenSource.Token);
+                        await Project.FloodAsync(this.IsV1, myCurrentTokenSource.Token);
                         FloodTime = myStopwatch.Elapsed;
 
                         myStopwatch.Restart();
@@ -206,9 +206,7 @@ namespace MARGO.ViewModels
                 {Step.Flood,
                     async ()=> {
                         StartBusy();
-                        byte tmpLevelOfParallelism = LevelOfParallelism;
-                        LevelOfParallelism = 1;
-                        await Project.FloodAsync(myCurrentTokenSource.Token);
+                        await Project.FloodAsync(this.IsV1,myCurrentTokenSource.Token);
                         FloodTime = myStopwatch.Elapsed;
 
                         myStopwatch.Restart();
@@ -216,7 +214,6 @@ namespace MARGO.ViewModels
 
                         this.ChangeFreshMap();
                         this.RaisePropertyChanged(nameof(Layers));
-                        LevelOfParallelism = tmpLevelOfParallelism;
                         SampleTime = EndBusy();
                     } },
                 {Step.Classify,

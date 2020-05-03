@@ -167,13 +167,14 @@ namespace MARGO.ViewModels
         public int MinimasCount => Project.MinimasCount;
 
 
-        public ICommand FloodCommand => new DelegateCommandAsync(
-            async () =>
+        public bool IsV1 { get; set; } = true;
+        public ICommand FloodCommand => new DelegateCommandAsync<bool>(
+            async isV1 =>
             {
                 StartBusy();
-                await Project.FloodAsync(myCurrentTokenSource.Token);
+                await Project.FloodAsync(isV1, myCurrentTokenSource.Token);
             },
-            () => Project.CanFlood)
+            _ => Project.CanFlood)
         {
             Finaly = () =>
             {

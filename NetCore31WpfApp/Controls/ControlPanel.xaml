@@ -21,6 +21,8 @@
         <!--<common:StringColorConverter x:Key="ColorConverter" />-->
         <common:IntColorConverter x:Key="ColorConverter" />
 
+        <common:BooleanNOTConverter x:Key="BooleanNOTConverter" />
+
         <sys:String x:Key="ElapsedTimeFormat">h\:mm\:ss\.fff</sys:String>
         <sys:String x:Key="ThousandFormat">{0:n0}</sys:String>
         <sys:String x:Key="PlayHeader">Play include this.</sys:String>
@@ -290,16 +292,24 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <Button
+                <StackPanel
                     Grid.Row="0"
-                    Grid.Column="0"
-                    Command="{Binding FloodCommand}"
-                    Content="Flood&gt;&gt;"
-                    Style="{StaticResource ButtonStyle}" />
-                <TextBlock
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    Text="{Binding FloodTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+                    Grid.ColumnSpan="2"
+                    Orientation="Horizontal">
+                    <StackPanel Margin="3">
+                        <RadioButton Content="v1" IsChecked="{Binding IsV1}" />
+                        <RadioButton Content="v2" IsChecked="{Binding IsV1, Converter={StaticResource BooleanNOTConverter}}" />
+                    </StackPanel>
+                    <Button
+                        CommandParameter="{Binding IsV1}"
+                        Command="{Binding FloodCommand}"
+                        Content="Flood&gt;&gt;"
+                        Style="{StaticResource ButtonStyle}" />
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Text="{Binding FloodTime, StringFormat={StaticResource ElapsedTimeFormat}}" />
+                </StackPanel>
                 <Label
                     Grid.Row="1"
                     Grid.Column="0"

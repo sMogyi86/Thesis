@@ -161,26 +161,26 @@ namespace MARGO.BL
         }
 
         public bool CanFlood => myMinimasIdxs.Any();
-        public async Task FloodAsync(CancellationToken token)
+        public async Task FloodAsync(bool isV1, CancellationToken token)
         {
             PrimsMST.Initalize(LOGGED.Width);
 
             IEnumerable<IMST> segments;
-            if (LevelOfParallelism == 1)
+            if (isV1)
             {
-                FieldsSemaphore.Initialize(LOGGED.Memory.Length, false);
-                segments = await this.FloodAsyncST(token).ConfigureAwait(false);
+                FieldsSemaphore.Initialize(LOGGED.Memory.Length, true);
+                segments = await this.FloodAsyncFirst(token).ConfigureAwait(false);
             }
             else
             {
-                FieldsSemaphore.Initialize(LOGGED.Memory.Length, true);
-                segments = await this.FloodAsyncMT(token).ConfigureAwait(false);
+                FieldsSemaphore.Initialize(LOGGED.Memory.Length, false);
+                segments = await this.FloodAsyncSecond(token).ConfigureAwait(false);
             }
 
             mySegments = segments;
         }
 
-        private async Task<IEnumerable<IMST>> FloodAsyncMT(CancellationToken token)
+        private async Task<IEnumerable<IMST>> FloodAsyncFirst(CancellationToken token)
         {
             int minimaCount = myMinimasIdxs.Count();
 
@@ -221,7 +221,7 @@ namespace MARGO.BL
             return segments;
         }
 
-        private async Task<IEnumerable<IMST>> FloodAsyncST(CancellationToken token) => await Task.Run(() =>
+        private async Task<IEnumerable<IMST>> FloodAsyncSecond(CancellationToken token) => await Task.Run(() =>
         {
             var segments = new List<PrimsMST>(myMinimasIdxs.Select(m => new PrimsMST(m, LOGGED.Memory)));
 
