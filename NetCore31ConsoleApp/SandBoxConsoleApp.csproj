@@ -5,9 +5,4 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\LibTiff\LibTiff.csproj" />
-    <ProjectReference Include="..\StandardClassLibrary_TestBL\BL.csproj" />
-  </ItemGroup>
-
 </Project>

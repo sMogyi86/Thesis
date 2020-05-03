@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 
 namespace MARGO.ViewModels
@@ -78,13 +80,14 @@ namespace MARGO.ViewModels
                 {Step.Load,
                     async ()=> {
                         StartBusy();
-                        string laodPath;
+                        string loadPath;
 #if DEBUG
-                        laodPath = @"D:\Segment\";
+                        loadPath = @"D:\Segment\";
 #else
-                        laodPath = this.GetType().Assembly.Location;
+                        //40mins from my life... https://github.com/dotnet/runtime/issues/13051
+                        loadPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
 #endif
-                        await Load(new DirectoryInfo(laodPath).EnumerateFiles("*.TIF").Select(fi => fi.FullName));
+                        await Load(new DirectoryInfo(loadPath).EnumerateFiles("*.TIF").Select(fi => fi.FullName));
                         LoadTime = EndBusy();
                     } },
                 {Step.Compose,
@@ -178,13 +181,13 @@ namespace MARGO.ViewModels
                 {Step.Load,
                     async ()=> {
                         StartBusy();
-                        string laodPath;
+                        string loadPath;
 #if DEBUG
-                        laodPath = @"D:\Segment\";
+                        loadPath = @"D:\Segment\";
 #else
-                        laodPath = this.GetType().Assembly.Location;
+                        loadPath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
 #endif
-                        await Load(new DirectoryInfo(laodPath).EnumerateFiles("*.TIF").Select(fi => fi.FullName));
+                        await Load(new DirectoryInfo(loadPath).EnumerateFiles("*.TIF").Select(fi => fi.FullName));
                         LoadTime = EndBusy();
                     } },
                 {Step.Compose,
