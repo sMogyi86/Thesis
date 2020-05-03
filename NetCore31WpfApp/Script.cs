@@ -110,7 +110,7 @@ namespace MARGO
         private void LastStep()
         {
             tokenSourceByRef?.Dispose();
-            tokenSourceByRef = null;
+            myDeleteTokenSource();
             UIServices.ShowInfo("AutoPlay finished.");
         }
 
