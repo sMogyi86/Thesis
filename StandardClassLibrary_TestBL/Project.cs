@@ -297,7 +297,7 @@ namespace MARGO.BL
             var segmentStatsEXT = new ISegmentStats[myCutedLayers.Count];
             int i = 0;
             foreach (var lyr in myCutedLayers)
-                segmentStatsEXT[i++] = new SegmentStatsDecorator(lyr.Value.Memory);
+                segmentStatsEXT[i++] = new SegmentStats(lyr.Value.Memory);
 
             IClassifier classifier = new MinDistClassifier();
             var categorySmaples = classifier.CreateCategorySamples(sType, samples, mySegments.Select(mst => mst.Items), segmentStatsEXT);
@@ -313,7 +313,7 @@ namespace MARGO.BL
                     var segmentStatsINT = new ISegmentStats[myCutedLayers.Count];
                     int i = 0;
                     foreach (var lyr in myCutedLayers)
-                        segmentStatsINT[i++] = new SegmentStatsDecorator(lyr.Value.Memory);
+                        segmentStatsINT[i++] = new SegmentStats(lyr.Value.Memory);
 
                     Span<byte> sampleVector = stackalloc byte[segmentStatsINT.Length];
                     Span<short> segmentBuffer = stackalloc short[shortRegisterCount];

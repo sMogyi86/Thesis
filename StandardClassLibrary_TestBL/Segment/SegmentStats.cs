@@ -12,7 +12,7 @@ namespace MARGO.BL.Segment
         byte GetSample(SampleType sType);
     }
 
-    class SegmentStatsDecorator : ISegmentStats
+    class SegmentStats : ISegmentStats
     {
         private const ushort MaxStackLimit = 4 * 1024; // n*K*B(yte) = 4KB :D
 
@@ -31,7 +31,7 @@ namespace MARGO.BL.Segment
         }
 
         private readonly ReadOnlyMemory<byte> myLayer;
-        public SegmentStatsDecorator(ReadOnlyMemory<byte> layer)
+        public SegmentStats(ReadOnlyMemory<byte> layer)
         {
             //LayerID = layerId string layerId,
             myLayer = layer;

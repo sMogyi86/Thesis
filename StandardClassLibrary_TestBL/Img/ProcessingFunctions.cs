@@ -176,7 +176,7 @@ namespace MARGO.BL.Img
         {
             var to = target.Span;
 
-            var stats = new SegmentStatsDecorator(source);
+            var stats = new SegmentStats(source);
             foreach (var segment in segments)
             {
                 stats.Segment = segment.Items;

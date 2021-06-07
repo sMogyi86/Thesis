@@ -73,7 +73,7 @@ namespace MARGO.BL
         }
 
         /// <summary>
-        /// Calculates the most equal lengths for cutting the volume into the give number of pieces.
+        /// Calculates the most equal lengths for cutting the volume into the given number of pieces.
         /// </summary>
         /// <param name="fullLength">the full length of the volume</param>
         /// <param name="pieceCount">the desired number of pieces</param>
